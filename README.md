@@ -1,8 +1,8 @@
 # selfdriven Tech
 
-## app
-## api
-## on-chain
+- app
+- api
+- on-chain
 
-https://selfdriven.foundation/the-shift
-https://selfdriven.foundation/tokens
+- https://selfdriven.foundation/the-shift
+- https://selfdriven.foundation/tokens
