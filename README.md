@@ -6,5 +6,5 @@
 
 ## Links:
 
-- https://selfdriven.foundation/the-shift
-- https://selfdriven.foundation/tokens
+- https://www.selfdriven.foundation/the-shift
+- https://www.selfdriven.foundation/tokens
