@@ -1,6 +1,6 @@
 # selfdriven Tech
 
-## **Powering the selfdrivenOS**
+**Powering the selfdrivenOS**
 
 ### About
 - [Apps](https://selfdriven.foundation/apps)
