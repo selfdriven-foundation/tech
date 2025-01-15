@@ -1,6 +1,6 @@
 # selfdriven Tech
 
-**Powering the selfdriven Organisation System - [selfdrivenOS](https://selfdriven.foundation/os)**
+**Powering the selfdriven Organisation System ([selfdrivenOS](https://selfdriven.foundation/os))**
 
 ### About
 - [Apps](https://selfdriven.foundation/apps)
