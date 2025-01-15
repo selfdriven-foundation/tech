@@ -1,6 +1,6 @@
 # selfdriven Tech
 
-**Powering the selfdrivenOS**
+**Powering the [selfdrivenOS](https://selfdriven.foundation/os)**
 
 ### About
 - [Apps](https://selfdriven.foundation/apps)
@@ -11,6 +11,7 @@
 - [APIs](/apis)
 
 ### Related
+- [selfdrivenOS](https://selfdriven.foundation/os).
 - [selfdriven.id](https://selfdriven.id) - Identity, Trust, SSI.
 - [selfdriven.network](https://selfdriven.network) - Compute & Storage.
 - [selfdriven.social](https://selfdriven.social) - AT Protocol.
