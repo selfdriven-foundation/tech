@@ -1,13 +1,13 @@
 # selfdriven Tech
 
-**Powering the selfdrivenOS**
+## **Powering the selfdrivenOS**
 
-## About
+### About
 - [Apps](https://selfdriven.foundation/apps)
 - [On-Chain](https://selfdriven.foundation/on-chain)
 - [Network](https://selfdriven.network)
 
-## Code
+### Code
 - [Apps](/apps)
 - [APIs](/apis)
 
