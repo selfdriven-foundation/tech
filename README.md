@@ -11,9 +11,9 @@
 - [APIs](/apis)
 
 ### Related
-- [selfdriven.id](https://selfdriven.id)
-- [selfdriven.network](https://selfdriven.network)
-- [selfdriven.social](https://selfdriven.social)
-- [selfdriven.ai](https://selfdriven.ai)
+- [selfdriven.id](https://selfdriven.id) - Identity, Trust, SSI.
+- [selfdriven.network](https://selfdriven.network) - Compute & Storage.
+- [selfdriven.social](https://selfdriven.social) - AT Protocol.
+- [selfdriven.ai](https://selfdriven.ai) - Intelligence services.
 
 > Supported by the [selfdriven Foundation](https://selfdriven.foundation)
