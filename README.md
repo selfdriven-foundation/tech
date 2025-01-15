@@ -1,14 +1,8 @@
-# selfdriven Foundation Tech
+# selfdriven Tech
 
-- app
-- api
-- on-chain
+- [Apps](https://selfdriven.foundation/apps)
+- [APIs](https://selfdriven.foundation/apps#apis)
+- [On-Chain](https://selfdriven.foundation/on-chain)
+- [Network](https://selfdriven.network)
 
-## SDK:
 
-- https://github.com/selfdriven-foundation/sdk
-
-## Links:
-
-- https://www.selfdriven.foundation/the-shift
-- https://www.selfdriven.foundation/tokens
