@@ -5,6 +5,10 @@ body {
 	background: #fff;
 }
 
+a {
+	color: #DE5A31 !important;
+}
+
 .header {
 	display: flex;
 	justify-content: space-between;
