@@ -1,6 +1,5 @@
 
-### Docs
-- [selfdriven.tech](https://selfdriven.tech)
+### [selfdriven.tech](https://selfdriven.tech)
 
 ### Code
 - [Apps](/apps)
