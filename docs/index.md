@@ -2,7 +2,8 @@
 layout: default
 title: Home
 ---
-**Powering the selfdriven Organisation System**
+
+## Powering the selfdriven Organisation System
 
 ### About
 - [Apps](https://selfdriven.fyi/apps)
