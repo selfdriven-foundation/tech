@@ -1,0 +1,19 @@
+- title: Octo
+  url: /octo
+  class: card-purple
+
+- title: Research
+  url: /research
+  class: card-cream
+
+- title: Roadmap
+  url: /roadmap
+  class: card-orange
+
+- title: Governance
+  url: /governance
+  class: card-black
+
+- title: Energy
+  url: /energy
+  class: card-maroon

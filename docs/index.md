@@ -1,3 +1,8 @@
+---
+layout: default
+title: Home
+---
+
 # selfdriven Tech
 
 **Powering the selfdriven Organisation System ([selfdrivenOS](https://selfdriven.foundation/os))**
