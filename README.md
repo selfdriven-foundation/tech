@@ -3,4 +3,4 @@
 - [Apps](/apps)
 - [APIs](/apis)
 
-> [selfdriven Foundation](https://selfdriven.foundation)
+[selfdriven Foundation](https://selfdriven.foundation)
