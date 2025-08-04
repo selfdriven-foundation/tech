@@ -5,8 +5,6 @@ title: Home
 
 ## Powering the selfdriven Organisation System
 
-### About
-- [selfdrivenOS](https://selfdriven.fyi/os)
 - [Apps](https://selfdriven.fyi/apps)
 - [On-Chain](https://selfdriven.fyi/on-chain)
 
