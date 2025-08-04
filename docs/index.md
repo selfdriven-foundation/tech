@@ -3,16 +3,14 @@ layout: default
 title: Home
 ---
 
-## Powering the selfdriven Organisation System
+## The technology powering the selfdriven Organisation System
 
 - [Apps](https://selfdriven.fyi/apps)
-- [On-Chain](https://selfdriven.fyi/on-chain)
-
-### Related
-- [selfdriven.network](https://selfdriven.network) - Compute & Storage.
+- [selfdriven.network](https://selfdriven.network) - Interfaces for Core, AI, SSI, On-Chain & Social.
     - [selfdriven.id](https://selfdriven.id) - Identity, Trust, SSI.
     - [selfdriven.social](https://selfdriven.social) - AT Protocol.
     - [selfdriven.ai](https://selfdriven.ai) - Intelligence services.
 
 ### References
+- [On-Chain](https://selfdriven.fyi/on-chain)
 - [x402.org Open Protocol Internet-Native Payments](https://x402.org).
