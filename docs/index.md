@@ -3,7 +3,7 @@ layout: default
 title: Home
 ---
 
-## The technology powering the selfdriven Organisation System
+## The technology powering the selfdriven Organisational System (selfdrivenOS)
 
 - [Apps](https://selfdriven.fyi/apps)
 - [selfdriven.network](https://selfdriven.network) - Interfaces for Core, AI, SSI, On-Chain & Social.
