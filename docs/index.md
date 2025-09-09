@@ -16,7 +16,6 @@ title: Home
 
 ### Related
 - [selfdriven.network](https://selfdriven.network)
-- [selfdriven.tech](https://selfdriven.tech)
 - [selfdriven.id](https://selfdriven.id) - Identity, Trust, SSI
 - [selfdriven.social](https://selfdriven.social) - AT Protocol.
 - [selfdriven.ai](https://selfdriven.ai) - Intelligence services.
