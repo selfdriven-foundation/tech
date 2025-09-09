@@ -5,14 +5,14 @@ title: Home
 
 ## The technology powering the selfdriven Organisational System (selfdrivenOS)
 
-### Interfaces Code
+### Interface Code
 - [Human](https://github.com/selfdriven-tech/interface-human)
-- [AI](https://github.com/selfdriven-tech/interface-ai)
-- [Attachment](https://github.com/selfdriven-tech/interface-attachment)
-- [Core](https://github.com/selfdriven-tech/interface-core)
-- [OnChain](https://github.com/selfdriven-tech/interface-onchain)
 - [Social](https://github.com/selfdriven-tech/interface-social)
 - [SSI](https://github.com/selfdriven-tech/interface-ssi)
+- [AI](https://github.com/selfdriven-tech/interface-ai)
+- [Core](https://github.com/selfdriven-tech/interface-core)
+- [Attachment](https://github.com/selfdriven-tech/interface-attachment)
+- [OnChain](https://github.com/selfdriven-tech/interface-onchain)
 
 ### Related
 - [selfdriven.network](https://selfdriven.network)
