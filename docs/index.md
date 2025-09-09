@@ -15,11 +15,11 @@ title: Home
 - [OnChain](https://github.com/selfdriven-tech/interface-onchain)
 
 ### Related
-- [selfdriven.network](https://selfdriven.network)
+- [selfdriven.network](https://selfdriven.network) - Interfaces
 - [selfdriven.id](https://selfdriven.id) - Identity, Trust, SSI
 - [selfdriven.social](https://selfdriven.social) - AT Protocol.
 - [selfdriven.ai](https://selfdriven.ai) - Intelligence services.
 
 ### References
-- [Why Cardano?](https://selfdriven.fyi/on-chain)
-- [x402.org Open Protocol Internet-Native Payments](https://x402.org).
+- [OnChain](https://selfdriven.fyi/on-chain) - Why Cardano?
+- [x402.org](https://x402.org) - Open Protocol Internet-Native Payments
