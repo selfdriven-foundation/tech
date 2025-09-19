@@ -10,9 +10,10 @@ title: Home
 - [Social](https://github.com/selfdriven-tech/interface-social)
 - [SSI](https://github.com/selfdriven-tech/interface-ssi)
 - [AI](https://github.com/selfdriven-tech/interface-ai)
-- [Core](https://github.com/selfdriven-tech/interface-core)
+- [Entity](https://github.com/selfdriven-tech/interface-entity)
 - [Attachment](https://github.com/selfdriven-tech/interface-attachment)
 - [OnChain](https://github.com/selfdriven-tech/interface-onchain)
+- [Infra](https://github.com/selfdriven-tech/interface-infra)
 
 ### Related
 - [selfdriven.network](https://selfdriven.network) - Interfaces
