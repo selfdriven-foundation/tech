@@ -1,0 +1,1167 @@
+---
+layout: null
+permalink: /interfaces/human/canton/wallet
+title: selfdriven CantonWallet — Passkey Identity
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href="/assets/img/selfdriven-logo-round-blackcurrant-flamingo.png">
+<link rel="apple-touch-icon" href="/assets/img/selfdriven-logo-round-blackcurrant-flamingo.png" />
+<title>selfdriven CantonWallet — DevNet / TestNet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+/* ── prose.css design tokens ─────────────────────────────────── */
+:root {
+  --bg: #f5f2ed; --surface: #edeae3; --surface2: #e5e1d8;
+  --border: #ddd8ce; --text: #1a1410; --muted: #6b5f52;
+  --muted2: #9e9085; --accent: #c8442f; --accent-dim: rgba(200,68,47,0.10);
+  --card-radius: 20px; --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  --ok: #22c55e; --warn-col: #f59e0b; --info-col: #3b82f6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0a0a; --surface: #161616; --surface2: #1e1e1e;
+    --border: #242424; --text: #f0ede8; --muted: #b0b0b0;
+    --muted2: #666; --accent: #e85d4a; --accent-dim: rgba(232,93,74,0.12);
+    --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  }
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { font-size:16px; }
+body {
+  font-family:'Poppins','Inter',system-ui,sans-serif;
+  background:var(--bg); color:var(--text);
+  line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+a { color:inherit; text-decoration:none; }
+
+/* ── Nav ─────────────────────────────────────────────────────── */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  padding:16px 40px;
+  display:flex; align-items:center; justify-content:space-between;
+  transition:background 0.3s, backdrop-filter 0.3s;
+}
+nav.scrolled {
+  background:rgba(245,242,237,0.92); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+@media (prefers-color-scheme:dark) { nav.scrolled { background:rgba(10,10,10,0.92); } }
+.nav-logo { display:flex; align-items:center; gap:12px; }
+.nav-logo img { height:36px; width:auto; display:block; }
+.nav-logo-label { display:flex; flex-direction:column; line-height:1.1; }
+.nav-logo-top { font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted2); }
+.nav-logo-bottom { font-size:15px; font-weight:700; letter-spacing:-0.02em; }
+.nav-logo-bottom span { color:var(--accent); }
+.nav-links { display:flex; gap:28px; list-style:none; }
+.nav-links a { font-size:13px; font-weight:500; letter-spacing:0.02em; color:var(--muted); transition:color 0.2s; }
+.nav-links a:hover { color:var(--text); }
+.network-badge {
+  font-size:10px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--muted2); border:1px solid var(--border); border-radius:999px;
+  padding:4px 12px; background:var(--surface); cursor:pointer;
+  transition:border-color 0.2s, color 0.2s;
+}
+.network-badge:hover { border-color:var(--accent); color:var(--accent); }
+.network-badge.devnet  { border-color:var(--info-col);  color:var(--info-col); }
+.network-badge.testnet { border-color:var(--warn-col); color:var(--warn-col); }
+.network-badge.mainnet { border-color:var(--ok);       color:var(--ok); }
+
+/* ── Demo ribbon ─────────────────────────────────────────────── */
+.ribbon {
+  display:none; position:fixed; top:68px; left:0; right:0; z-index:99;
+  padding:8px 40px; font-size:12px; color:var(--muted);
+  align-items:center; gap:8px;
+}
+.ribbon.show { display:flex; }
+.ribbon-demo { background:var(--surface2); border-bottom:1px solid var(--border); }
+.ribbon-live { background:rgba(34,197,94,0.08); border-bottom:1px solid rgba(34,197,94,0.2); color:#16a34a; }
+@media (prefers-color-scheme:dark) { .ribbon-live { color:#4ade80; } }
+.ribbon-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0;animation:pulse 2s infinite; }
+.ribbon-demo .ribbon-dot { background:var(--accent); }
+.ribbon-live .ribbon-dot { background:var(--ok); }
+
+/* ── Page ────────────────────────────────────────────────────── */
+.page { padding:120px 40px 120px; max-width:640px; margin:0 auto; }
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.hero { margin-bottom:48px; animation:fadeUp 0.5s ease both; }
+.hero-eyebrow { font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:16px; }
+.hero h1 { font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-0.04em;line-height:1.05;margin-bottom:20px; }
+.hero h1 em { color:var(--accent);font-style:italic; }
+.hero-desc { font-size:16px;color:var(--muted);line-height:1.75;max-width:480px; }
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.wallet-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--card-radius); box-shadow:var(--shadow);
+  overflow:hidden; animation:fadeUp 0.5s ease 0.08s both;
+  position:relative;
+}
+.wallet-card::before {
+  content:''; position:absolute; top:0;left:0;right:0;height:3px;
+  background:var(--accent);
+}
+
+/* ── Network selector ────────────────────────────────────────── */
+.net-selector {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  border-bottom:1px solid var(--border);
+}
+.net-btn {
+  background:none; border:none; padding:14px 12px;
+  font-family:'Poppins',sans-serif; font-size:11px; font-weight:700;
+  letter-spacing:0.07em; text-transform:uppercase;
+  color:var(--muted2); cursor:pointer; position:relative;
+  transition:color 0.2s; border-right:1px solid var(--border);
+}
+.net-btn:last-child { border-right:none; }
+.net-btn.active-devnet  { color:var(--info-col); }
+.net-btn.active-testnet { color:var(--warn-col); }
+.net-btn.active-mainnet { color:var(--ok); }
+.net-btn.active-devnet::after,
+.net-btn.active-testnet::after,
+.net-btn.active-mainnet::after {
+  content:''; position:absolute; bottom:-1px;left:20%;right:20%;
+  height:2px; border-radius:2px;
+}
+.net-btn.active-devnet::after  { background:var(--info-col); }
+.net-btn.active-testnet::after { background:var(--warn-col); }
+.net-btn.active-mainnet::after { background:var(--ok); }
+
+/* ── Config panel ────────────────────────────────────────────── */
+.config-panel { padding:24px; border-bottom:1px solid var(--border); }
+.config-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.config-row.full { grid-template-columns:1fr; }
+
+.field-group { display:flex; flex-direction:column; gap:5px; }
+label {
+  font-size:11px; font-weight:600; letter-spacing:0.08em;
+  text-transform:uppercase; color:var(--muted2);
+}
+input[type="text"], input[type="url"], input[type="password"], select {
+  background:var(--bg); border:1px solid var(--border); border-radius:10px;
+  padding:10px 14px; font-family:'Poppins',sans-serif;
+  font-size:13px; color:var(--text); width:100%;
+  outline:none; transition:border-color 0.2s,box-shadow 0.2s;
+  appearance:none;
+}
+input:focus, select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+input::placeholder { color:var(--muted2); }
+
+.field-hint { font-size:11px; color:var(--muted2); margin-top:2px; }
+.field-hint a { color:var(--accent); text-decoration:underline; text-decoration-color:var(--accent-dim); }
+.field-hint a:hover { text-decoration-color:var(--accent); }
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border); }
+.tab-btn {
+  background:none; border:none; padding:14px 20px;
+  font-family:'Poppins',sans-serif; font-size:12px; font-weight:600;
+  letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--muted2); cursor:pointer; position:relative; transition:color 0.2s;
+}
+.tab-btn:first-child { border-right:1px solid var(--border); }
+.tab-btn.active { color:var(--text); }
+.tab-btn.active::after {
+  content:''; position:absolute; bottom:-1px;left:20%;right:20%;
+  height:2px; background:var(--accent); border-radius:2px;
+}
+.tab-btn:hover:not(.active) { color:var(--text); }
+.panel { display:none; }
+.panel.active { display:block; }
+.card-body { padding:24px; }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn-primary {
+  width:100%; background:var(--accent); color:#fff; border:none;
+  border-radius:999px; padding:13px 24px;
+  font-family:'Poppins',sans-serif; font-size:14px; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:opacity 0.15s,transform 0.15s,box-shadow 0.15s;
+}
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); box-shadow:0 6px 20px var(--accent-dim); }
+.btn-primary:active { transform:none; }
+.btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+
+/* ── Info/warn notes — blockquote style ──────────────────────── */
+.note {
+  margin:0 0 18px; padding:14px 18px;
+  background:var(--surface); border:1px solid var(--border);
+  border-left:3px solid var(--accent);
+  border-radius:0 10px 10px 0;
+  font-size:13px; color:var(--muted); line-height:1.7;
+  display:flex; gap:10px; align-items:flex-start;
+}
+.note svg { flex-shrink:0; margin-top:2px; }
+.note.warn  { border-left-color:var(--warn-col); }
+.note.ok    { border-left-color:var(--ok); }
+.note.info  { border-left-color:var(--info-col); }
+.note a { color:var(--accent); text-decoration:underline; text-decoration-color:var(--accent-dim); }
+.note a:hover { text-decoration-color:var(--accent); }
+.note code {
+  font-family:'SF Mono','Fira Code',ui-monospace,monospace;
+  font-size:11px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:4px;
+  padding:1px 5px; color:var(--accent);
+}
+
+/* ── Compat warning ──────────────────────────────────────────── */
+.compat-warning {
+  display:none; margin-bottom:16px; padding:12px 16px;
+  background:rgba(200,68,47,0.06); border:1px solid rgba(200,68,47,0.25);
+  border-radius:10px; font-size:13px; color:var(--accent);
+  align-items:center; gap:9px;
+}
+.compat-warning.show { display:flex; }
+
+/* ── Divider ─────────────────────────────────────────────────── */
+.divider { display:flex;align-items:center;gap:12px;margin:18px 0; }
+.divider::before,.divider::after { content:'';flex:1;height:1px;background:var(--border); }
+.divider span { font-size:11px;color:var(--muted2);font-weight:500; }
+
+/* ── Stored wallets ──────────────────────────────────────────── */
+.stored-list { display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-top:6px; }
+.stored-item {
+  display:flex;align-items:center;gap:12px;padding:11px 14px;
+  background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  cursor:pointer;transition:border-color 0.2s,transform 0.15s;
+  font-size:13px;text-align:left;width:100%;
+  font-family:'Poppins',sans-serif;color:var(--text);
+}
+.stored-item:hover { border-color:var(--accent);transform:translateY(-1px); }
+.stored-item-name { font-weight:600; }
+.stored-item-ts { font-size:11px;color:var(--muted2);margin-top:1px; }
+
+/* ── Connection status bar ───────────────────────────────────── */
+.conn-bar {
+  padding:12px 20px; background:var(--surface2);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; gap:12px;
+}
+.conn-indicator { display:flex; align-items:center; gap:7px; font-weight:600; }
+.conn-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.conn-dot.checking { background:var(--warn-col);animation:pulse 1s infinite; }
+.conn-dot.connected { background:var(--ok); }
+.conn-dot.error { background:var(--accent); }
+.conn-dot.demo { background:var(--muted); animation:pulse 2s infinite; }
+.conn-test-btn {
+  background:none; border:1px solid var(--border); border-radius:999px;
+  padding:4px 12px; font-family:'Poppins',sans-serif;
+  font-size:11px; font-weight:600; color:var(--muted); cursor:pointer;
+  transition:all 0.2s;
+}
+.conn-test-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── Wallet dashboard ────────────────────────────────────────── */
+.wallet-view { display:none; width:100%; animation:fadeUp 0.4s ease both; }
+.wallet-view.active { display:flex; flex-direction:column; gap:14px; }
+
+.wallet-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:4px; }
+.wallet-label { font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2); }
+.status-pill {
+  display:flex;align-items:center;gap:6px;
+  background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);
+  border-radius:999px;padding:4px 12px;
+  font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ok);
+}
+.status-pill::before { content:'';width:5px;height:5px;background:var(--ok);border-radius:50%;animation:pulse 2s infinite; }
+
+.identity-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-left:3px solid var(--accent); border-radius:var(--card-radius);
+  padding:28px; box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.identity-card::after {
+  content:''; position:absolute; top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent) 0%,transparent 60%);
+}
+.id-label { font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px; }
+.id-name { font-size:22px;font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px; }
+.id-address-row {
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.id-address { font-family:'SF Mono','Fira Code',ui-monospace,monospace;font-size:11px;color:var(--accent);word-break:break-all;flex:1; }
+.copy-btn { background:none;border:none;cursor:pointer;color:var(--muted2);padding:3px;border-radius:6px;transition:color 0.2s;flex-shrink:0; }
+.copy-btn:hover { color:var(--accent); }
+
+.meta-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.meta-card {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--card-radius);padding:16px 18px;box-shadow:var(--shadow);
+  position:relative;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;
+}
+.meta-card:hover { transform:translateY(-2px);box-shadow:var(--shadow),0 6px 20px rgba(0,0,0,0.08); }
+.meta-card::before {
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform 0.25s;
+}
+.meta-card:hover::before { transform:scaleX(1); }
+.meta-key { font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);margin-bottom:5px; }
+.meta-val { font-size:13px;font-weight:700;color:var(--text);word-break:break-all; }
+.meta-val.mono { font-family:'SF Mono','Fira Code',ui-monospace,monospace;font-size:11px;font-weight:500;color:var(--accent); }
+
+.cred-section { background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius);padding:20px 24px;box-shadow:var(--shadow); }
+.cred-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }
+.cred-title { font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted2); }
+.cred-item { display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:12px; }
+.cred-icon { width:34px;height:34px;background:var(--accent-dim);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.cred-name { font-size:13px;font-weight:700;margin-bottom:2px; }
+.cred-sub { font-size:11px;color:var(--muted2); }
+
+.actions-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.action-btn {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--card-radius);padding:16px 18px;cursor:pointer;
+  display:flex;align-items:center;gap:12px;text-align:left;
+  transition:transform 0.2s,box-shadow 0.2s;box-shadow:var(--shadow);
+  font-family:'Poppins',sans-serif;position:relative;overflow:hidden;
+}
+.action-btn::before {
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform 0.25s;
+}
+.action-btn:hover { transform:translateY(-2px);box-shadow:var(--shadow),0 6px 20px rgba(0,0,0,0.1); }
+.action-btn:hover::before { transform:scaleX(1); }
+.action-icon { width:34px;height:34px;border-radius:10px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.action-label { font-size:13px;font-weight:700;color:var(--text); }
+.action-sub { font-size:11px;color:var(--muted2);margin-top:1px; }
+
+.logout-btn {
+  width:100%;background:none;border:1px solid var(--border);border-radius:999px;
+  padding:10px 20px;color:var(--muted2);font-family:'Poppins',sans-serif;
+  font-size:13px;font-weight:500;cursor:pointer;transition:color 0.2s,border-color 0.2s;
+}
+.logout-btn:hover { color:var(--accent);border-color:var(--accent); }
+
+/* ── Ledger activity feed ─────────────────────────────────────── */
+.activity-section { background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius);padding:20px 24px;box-shadow:var(--shadow); }
+.activity-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }
+.activity-title { font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted2); }
+.activity-refresh { background:none;border:none;cursor:pointer;color:var(--muted2);font-size:11px;font-family:'Poppins',sans-serif;font-weight:600;transition:color 0.2s; }
+.activity-refresh:hover { color:var(--accent); }
+.activity-list { display:flex;flex-direction:column;gap:6px; }
+.activity-item { display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:12px; }
+.activity-type { font-weight:700;color:var(--text);min-width:80px; }
+.activity-detail { color:var(--muted);flex:1;font-family:'SF Mono','Fira Code',ui-monospace,monospace;font-size:11px;word-break:break-all; }
+.activity-time { color:var(--muted2);flex-shrink:0;font-size:10px; }
+.activity-empty { text-align:center;color:var(--muted2);font-size:13px;padding:12px 0; }
+
+/* ── Origin banner ───────────────────────────────────────────── */
+.origin-overlay {
+  display:none;position:fixed;inset:0;z-index:2000;
+  background:rgba(245,242,237,0.92);backdrop-filter:blur(10px);
+  align-items:center;justify-content:center;padding:24px;
+}
+@media (prefers-color-scheme:dark) { .origin-overlay { background:rgba(10,10,10,0.94); } }
+.origin-overlay.show { display:flex; }
+.origin-card {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--card-radius);padding:36px;
+  max-width:580px;width:100%;
+  box-shadow:0 24px 60px rgba(0,0,0,0.15);
+  display:flex;flex-direction:column;gap:18px;
+  position:relative;overflow:hidden;
+}
+.origin-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent); }
+.origin-icon { width:48px;height:48px;background:var(--accent-dim);border-radius:14px;display:flex;align-items:center;justify-content:center; }
+.origin-eyebrow { font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:2px; }
+.origin-title { font-size:22px;font-weight:800;letter-spacing:-0.03em; }
+.origin-body { font-size:14px;color:var(--muted);line-height:1.75; }
+.origin-body strong { font-weight:700;color:var(--text); }
+.origin-body code { font-family:'SF Mono','Fira Code',ui-monospace,monospace;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--accent); }
+.cmd-block { background:var(--bg);border:1px solid var(--border);border-radius:var(--card-radius);overflow:hidden; }
+.cmd-tabs { display:flex;border-bottom:1px solid var(--border);overflow-x:auto; }
+.cmd-tab-btn {
+  background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;
+  padding:9px 16px;font-family:'Poppins',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:0.06em;text-transform:uppercase;color:var(--muted2);cursor:pointer;
+  transition:color 0.15s;white-space:nowrap;
+}
+.cmd-tab-btn.active { color:var(--accent);border-bottom-color:var(--accent); }
+.cmd-content { display:none;padding:16px 20px; }
+.cmd-content.active { display:block; }
+.cmd-comment { font-size:11px;color:var(--muted2);margin-bottom:6px;font-style:italic; }
+.cmd-line { font-family:'SF Mono','Fira Code',ui-monospace,monospace;font-size:12px;color:var(--text);display:flex;align-items:baseline;gap:8px;line-height:1.7; }
+.cmd-prompt { color:var(--accent);font-weight:700;user-select:none; }
+.cmd-url { font-size:11px;margin-top:8px;color:var(--accent);font-family:'SF Mono','Fira Code',ui-monospace,monospace; }
+.origin-actions { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.btn-demo { background:transparent;border:1px solid var(--border);border-radius:999px;padding:12px 18px;color:var(--muted);font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s; }
+.btn-demo:hover { border-color:var(--muted);color:var(--text); }
+.btn-ok { background:var(--accent);border:none;border-radius:999px;padding:12px 18px;color:#fff;font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.15s; }
+.btn-ok:hover { opacity:0.88; }
+
+/* ── Spinner ─────────────────────────────────────────────────── */
+.spinner { width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spin 0.6s linear infinite;display:inline-block; }
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer { border-top:1px solid var(--border);padding:40px;max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between; }
+.footer-logo img { height:16px;width:auto;opacity:0.6; }
+.footer-links { display:flex;gap:24px;list-style:none; }
+.footer-links a { font-size:12px;color:var(--muted2);transition:color 0.2s; }
+.footer-links a:hover { color:var(--muted); }
+.footer-copy { font-size:11px;color:var(--muted2); }
+
+/* ── Toast ───────────────────────────────────────────────────── */
+.toast-wrap { position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:8px;z-index:1000; }
+.toast { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:9px;max-width:320px;box-shadow:var(--shadow);animation:slideIn 0.25s ease;font-family:'Poppins',sans-serif;font-weight:500;color:var(--text); }
+.toast.success { border-left:3px solid var(--ok); }
+.toast.error   { border-left:3px solid var(--accent); }
+.toast.info    { border-left:3px solid var(--info-col); }
+.toast.warn    { border-left:3px solid var(--warn-col); }
+.toast-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+.toast.success .toast-dot { background:var(--ok); }
+.toast.error   .toast-dot { background:var(--accent); }
+.toast.info    .toast-dot { background:var(--info-col); }
+.toast.warn    .toast-dot { background:var(--warn-col); }
+
+@keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideIn { from{opacity:0;transform:translateX(14px)} to{opacity:1;transform:translateX(0)} }
+@keyframes spin    { to{transform:rotate(360deg)} }
+@keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+@media (max-width:600px) {
+  nav { padding:14px 20px; }
+  .nav-links { display:none; }
+  .page { padding:100px 20px 80px; }
+  .meta-grid,.actions-row,.config-row { grid-template-columns:1fr; }
+  footer { flex-direction:column;gap:20px;align-items:flex-start;padding:32px 20px; }
+  .origin-actions { grid-template-columns:1fr; }
+  .origin-card { padding:24px 20px; }
+  .net-selector { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Origin banner ─────────────────────────────────────────── -->
+<div class="origin-overlay" id="originBanner">
+  <div class="origin-card">
+    <div class="origin-icon">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 3L19.5 18H2.5L11 3Z" stroke="var(--accent)" stroke-width="1.7" stroke-linejoin="round"/>
+        <path d="M11 9.5V13M11 15.5V16" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="origin-eyebrow">Setup Required</div>
+      <div class="origin-title">Serve via localhost</div>
+    </div>
+    <div class="origin-body">
+      WebAuthn / Passkeys require a <strong>secure context</strong> — either
+      <code>https://</code> or <code>http://localhost</code>.
+      Opening as <code>file://</code> won't work.<br><br>
+      Run one command below, then open <strong>http://localhost:8080</strong>:
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-tabs">
+        <button class="cmd-tab-btn active" onclick="cmdTab('python')">Python</button>
+        <button class="cmd-tab-btn" onclick="cmdTab('node')">Node</button>
+        <button class="cmd-tab-btn" onclick="cmdTab('npx')">npx</button>
+        <button class="cmd-tab-btn" onclick="cmdTab('ruby')">Ruby</button>
+        <button class="cmd-tab-btn" onclick="cmdTab('php')">PHP</button>
+      </div>
+      <div class="cmd-content active" id="cmd-python">
+        <div class="cmd-comment">Python 3 — built-in, no install needed</div>
+        <div class="cmd-line"><span class="cmd-prompt">$</span>cd /path/to/folder && python3 -m http.server 8080</div>
+      </div>
+      <div class="cmd-content" id="cmd-node">
+        <div class="cmd-comment">npm install -g http-server (once)</div>
+        <div class="cmd-line"><span class="cmd-prompt">$</span>http-server . -p 8080 --cors</div>
+      </div>
+      <div class="cmd-content" id="cmd-npx">
+        <div class="cmd-comment">No install needed</div>
+        <div class="cmd-line"><span class="cmd-prompt">$</span>npx serve . -l 8080</div>
+      </div>
+      <div class="cmd-content" id="cmd-ruby">
+        <div class="cmd-comment">Ruby — built-in</div>
+        <div class="cmd-line"><span class="cmd-prompt">$</span>ruby -run -e httpd . -p 8080</div>
+      </div>
+      <div class="cmd-content" id="cmd-php">
+        <div class="cmd-comment">PHP — built-in</div>
+        <div class="cmd-line"><span class="cmd-prompt">$</span>php -S localhost:8080</div>
+      </div>
+      <div style="padding:0 20px 14px">
+        <div class="cmd-url">→ http://localhost:8080/selfdriven-canton-wallet.html</div>
+      </div>
+    </div>
+    <div class="origin-actions">
+      <button class="btn-demo" onclick="enterDemoMode()">↗ Try Demo Mode instead</button>
+      <button class="btn-ok" onclick="dismissBanner()">Got it, I'll use localhost</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Ribbons ────────────────────────────────────────────────── -->
+<div class="ribbon ribbon-demo" id="demoRibbon">
+  <div class="ribbon-dot"></div>
+  <span><strong>Demo Mode</strong> — passkey flows are simulated. Serve via localhost for real biometric auth.</span>
+</div>
+<div class="ribbon ribbon-live" id="liveRibbon">
+  <div class="ribbon-dot"></div>
+  <span id="liveRibbonText"><strong>Live</strong> — connected to Canton Network.</span>
+</div>
+
+<!-- ── Nav ───────────────────────────────────────────────────── -->
+<nav id="mainNav">
+  <div class="nav-logo">
+    <img src="data:image/png;base64,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" alt="selfdriven wallet" />
+    <div class="nav-logo-label">
+      <div class="nav-logo-top">selfdriven</div>
+      <div class="nav-logo-bottom">Canton<span>Wallet</span></div>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="https://selfdriven.network" target="_blank">Network</a></li>
+  </ul>
+  <div class="network-badge" id="netBadge" onclick="focusConfig()">CANTON · DEVNET</div>
+</nav>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero" id="heroSection">
+    <div class="hero-eyebrow">Passkey-Secured Identity</div>
+    <h1>Your<br><em>self-sovereign</em><br>Canton Wallet.</h1>
+    <p class="hero-desc">Connect to Canton DevNet or TestNet using your device passkey. No seed phrases. No passwords. Real party IDs from a real validator node.</p>
+  </div>
+
+  <!-- Auth card -->
+  <div class="wallet-card" id="authCard">
+
+    <!-- Network selector -->
+    <div class="net-selector">
+      <button class="net-btn active-devnet" id="btn-devnet" onclick="selectNetwork('devnet')">DevNet</button>
+      <button class="net-btn" id="btn-testnet" onclick="selectNetwork('testnet')">TestNet</button>
+      <button class="net-btn" id="btn-mainnet" onclick="selectNetwork('mainnet')">MainNet</button>
+    </div>
+
+    <!-- Network info note -->
+    <div style="padding:16px 24px 0" id="netNote">
+      <div class="note info" id="netNoteDevnet">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="var(--info-col)" stroke-width="1.2"/><path d="M6.5 5.5V9M6.5 4V4.5" stroke="var(--info-col)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span><strong>DevNet</strong> — open to any node, resets every ~3 months. Requires your validator's egress IP to be whitelisted by a Super Validator. <a href="https://docs.dev.sync.global/validator_operator/validator_onboarding.html" target="_blank">Onboarding docs →</a></span>
+      </div>
+      <div class="note warn" id="netNoteTestnet" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="var(--warn-col)" stroke-width="1.2" stroke-linejoin="round"/><path d="M6.5 5.5V8.5M6.5 9.5V10" stroke="var(--warn-col)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span><strong>TestNet</strong> — requires GSF Tokenomics Committee approval. Apply at <a href="https://sync.global/validator-request/" target="_blank">sync.global/validator-request →</a></span>
+      </div>
+      <div class="note ok" id="netNoteMainnet" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="var(--ok)" stroke-width="1.2"/><path d="M4 6.5L6 8.5L9.5 5" stroke="var(--ok)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span><strong>MainNet</strong> — invite-only. Requires sponsor super-validator approval via <a href="https://canton.network/connect" target="_blank">canton.network/connect →</a></span>
+      </div>
+    </div>
+
+    <!-- Validator config -->
+    <div class="config-panel">
+      <div class="config-row">
+        <div class="field-group">
+          <label>Validator / Wallet App URL</label>
+          <input type="url" id="validatorUrl" placeholder="https://wallet.validator.example.com" />
+          <div class="field-hint">Your validator node's wallet backend API. <a href="https://docs.dev.sync.global/validator_operator/validator_compose.html" target="_blank">Setup guide →</a></div>
+        </div>
+        <div class="field-group">
+          <label>Auth Token (JWT) <span style="font-weight:400;font-size:10px;color:var(--muted2)">(optional)</span></label>
+          <input type="password" id="authToken" placeholder="eyJhbGci..." />
+          <div class="field-hint">Bearer token from your OIDC provider (Auth0, Keycloak etc).</div>
+        </div>
+      </div>
+      <div class="conn-bar" id="connBar">
+        <div class="conn-indicator">
+          <div class="conn-dot demo" id="connDot"></div>
+          <span id="connText">Not connected</span>
+        </div>
+        <button class="conn-test-btn" onclick="testConnection()">Test Connection</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('create')">Create Wallet</button>
+      <button class="tab-btn" onclick="switchTab('recover')">Sign In</button>
+    </div>
+
+    <!-- Create panel -->
+    <div class="card-body panel active" id="createPanel">
+      <div class="compat-warning" id="compatWarning">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L13 12H1L7 2Z" stroke="var(--accent)" stroke-width="1.4"/><path d="M7 6V9M7 10.5V11" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        WebAuthn not supported. Use Chrome, Safari, or Edge on a device with biometrics.
+      </div>
+      <div class="field-group" style="margin-bottom:16px">
+        <label>Display Name</label>
+        <input type="text" id="createName" placeholder="e.g. Mark — selfdriven" autocomplete="name" />
+      </div>
+      <div class="note">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="var(--accent)" stroke-width="1.2"/><path d="M6.5 5.5V9M6.5 4V4.5" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>Your passkey is stored on-device (Touch ID, Face ID, Windows Hello). When connected to a validator, a real Canton Party ID will be allocated via the Ledger API. In Demo Mode a simulated ID is generated locally.</span>
+      </div>
+      <button class="btn-primary" id="createBtn" onclick="createWallet()">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5C5.3 1.5 3.5 3.3 3.5 5.5V7.5H2.5C2 7.5 1.5 8 1.5 8.5V13C1.5 13.5 2 14 2.5 14H12.5C13 14 13.5 13.5 13.5 13V8.5C13.5 8 13 7.5 12.5 7.5H11.5V5.5C11.5 3.3 9.7 1.5 7.5 1.5Z" stroke="white" stroke-width="1.4"/><circle cx="7.5" cy="11" r="1.2" fill="white"/></svg>
+        Create Wallet with Passkey
+      </button>
+    </div>
+
+    <!-- Sign in panel -->
+    <div class="card-body panel" id="recoverPanel">
+      <div class="note" style="margin-bottom:14px">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="var(--accent)" stroke-width="1.2"/><path d="M6.5 5.5V9M6.5 4V4.5" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Your device will prompt you to select a saved passkey. If connected to a validator, your Party ID will be fetched from the ledger.
+      </div>
+      <div id="storedWrap" style="display:none;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px">Wallets on this device</div>
+        <div class="stored-list" id="storedList"></div>
+        <div class="divider"><span>or authenticate fresh</span></div>
+      </div>
+      <button class="btn-primary" onclick="authenticateWallet()">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5C5.3 1.5 3.5 3.3 3.5 5.5V7.5H2.5C2 7.5 1.5 8 1.5 8.5V13C1.5 13.5 2 14 2.5 14H12.5C13 14 13.5 13.5 13.5 13V8.5C13.5 8 13 7.5 12.5 7.5H11.5V5.5C11.5 3.3 9.7 1.5 7.5 1.5Z" stroke="white" stroke-width="1.4"/><circle cx="7.5" cy="11" r="1.2" fill="white"/></svg>
+        Authenticate with Passkey
+      </button>
+      <div class="divider"><span>saved wallets</span></div>
+      <div id="noStoredMsg" style="text-align:center;font-size:13px;color:var(--muted2);padding:6px 0">No wallets saved on this device yet.</div>
+    </div>
+  </div>
+
+  <!-- Wallet dashboard -->
+  <div class="wallet-view" id="walletView">
+    <div class="wallet-header">
+      <div class="wallet-label">Active Wallet</div>
+      <div class="status-pill" id="dashStatus">Connected</div>
+    </div>
+
+    <div class="identity-card">
+      <div class="id-label">Canton Party Identity</div>
+      <div class="id-name" id="wName">—</div>
+      <div class="id-address-row">
+        <div class="id-address" id="wPartyId">—</div>
+        <button class="copy-btn" onclick="copyPartyId()" title="Copy Party ID">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2.5C2 2.2 2.2 2 2.5 2H8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-card"><div class="meta-key">Network</div><div class="meta-val" id="wNetwork">—</div></div>
+      <div class="meta-card"><div class="meta-key">Auth</div><div class="meta-val">Passkey · WebAuthn</div></div>
+      <div class="meta-card"><div class="meta-key">Validator URL</div><div class="meta-val mono" id="wValidator">—</div></div>
+      <div class="meta-card"><div class="meta-key">Created</div><div class="meta-val mono" id="wCreatedAt">—</div></div>
+    </div>
+
+    <div class="cred-section">
+      <div class="cred-header">
+        <div class="cred-title">Registered Passkey</div>
+        <div style="font-size:12px;color:var(--muted2)">1 credential</div>
+      </div>
+      <div class="cred-item">
+        <div class="cred-icon">
+          <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5C5.3 1.5 3.5 3.3 3.5 5.5V7.5H2.5C2 7.5 1.5 8 1.5 8.5V13C1.5 13.5 2 14 2.5 14H12.5C13 14 13.5 13.5 13.5 13V8.5C13.5 8 13 7.5 12.5 7.5H11.5V5.5C11.5 3.3 9.7 1.5 7.5 1.5Z" stroke="var(--accent)" stroke-width="1.4"/><circle cx="7.5" cy="11" r="1.2" fill="var(--accent)"/></svg>
+        </div>
+        <div>
+          <div class="cred-name" id="wDevice">This Device</div>
+          <div class="cred-sub" id="wDeviceType">Platform Authenticator · ES256</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ledger activity -->
+    <div class="activity-section">
+      <div class="activity-header">
+        <div class="activity-title">Ledger Activity</div>
+        <button class="activity-refresh" onclick="fetchActivity()">↺ Refresh</button>
+      </div>
+      <div class="activity-list" id="activityList">
+        <div class="activity-empty" id="activityEmpty">No transactions yet — or connect a validator to see live data.</div>
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <button class="action-btn" onclick="signTestPayload()">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 12.5L5.8 11.8L13 4.5L11.5 3L4.2 10.2L3 12.5Z" stroke="var(--accent)" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        </div>
+        <div><div class="action-label">Sign Payload</div><div class="action-sub">Passkey → JWT exchange</div></div>
+      </button>
+      <button class="action-btn" onclick="exportIdentity()">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V10.5M5.5 8L8 10.5L10.5 8" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13H13" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div><div class="action-label">Export Identity</div><div class="action-sub">Download wallet JSON</div></div>
+      </button>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">Sign Out</button>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ── Footer ──────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-logo">
+    <img src="assets/img/selfdriven-logo-words-blackcurrant-transparent.png" alt="selfdriven" />
+  </div>
+  <ul class="footer-links">
+    <li><a href="https://selfdriven.id" target="_blank">id</a></li>
+    <li><a href="https://selfdriven.ai" target="_blank">ai</a></li>
+    <li><a href="https://github.com/selfdriven-foundation" target="_blank">github</a></li>
+  </ul>
+  <div class="footer-copy"><a href="https://selfdriven.tech" target="_blank">selfdriven.tech</a></div>
+</footer>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────
+const DB_KEY = 'selfdriven_canton_v2';
+
+// Default validator URLs per network (Splice/DA public endpoints)
+const NETWORK_DEFAULTS = {
+  devnet:  { url: 'https://wallet.validator.dev.global.canton.network.sync.global', label: 'CANTON · DEVNET' },
+  testnet: { url: 'https://wallet.validator.test.global.canton.network.sync.global', label: 'CANTON · TESTNET' },
+  mainnet: { url: '', label: 'CANTON · MAINNET' }
+};
+
+// Canton JSON API paths (Splice wallet backend)
+const API = {
+  health:   '/api/validator/v0/health',
+  user:     '/api/validator/v0/app-manager/users/self',
+  party:    '/api/validator/v0/wallet/user-status',
+  txs:      '/api/validator/v0/wallet/transactions?count=10',
+  onboard:  '/api/validator/v0/register'
+};
+
+// ── State ─────────────────────────────────────────────────────
+let DEMO_MODE = false;
+let currentWallet = null;
+let selectedNetwork = 'devnet';
+let connectionState = 'disconnected'; // disconnected | checking | connected | error
+
+// ── Nav scroll ────────────────────────────────────────────────
+window.addEventListener('scroll', () =>
+  document.getElementById('mainNav').classList.toggle('scrolled', scrollY > 20));
+
+// ── Origin / file:// check ────────────────────────────────────
+function checkOrigin() {
+  if (location.protocol === 'file:' || !window.isSecureContext)
+    document.getElementById('originBanner').classList.add('show');
+}
+function dismissBanner() { document.getElementById('originBanner').classList.remove('show'); }
+function enterDemoMode() {
+  DEMO_MODE = true;
+  document.getElementById('originBanner').classList.remove('show');
+  document.getElementById('demoRibbon').classList.add('show');
+  document.querySelector('.page').style.paddingTop = '140px';
+  setConnState('demo', 'Demo Mode — passkey flows are simulated');
+  toast('Demo Mode active — passkey flows are simulated.', 'info', 4000);
+}
+function cmdTab(n) {
+  document.querySelectorAll('.cmd-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.cmd-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.cmd-tab-btn[onclick="cmdTab('${n}')"]`).classList.add('active');
+  document.getElementById('cmd-' + n).classList.add('active');
+}
+function focusConfig() { document.getElementById('validatorUrl').focus(); }
+
+// ── Network selection ─────────────────────────────────────────
+function selectNetwork(net) {
+  selectedNetwork = net;
+  ['devnet','testnet','mainnet'].forEach(n => {
+    const btn = document.getElementById('btn-' + n);
+    btn.className = 'net-btn' + (n === net ? ` active-${n}` : '');
+  });
+  // Update notes
+  ['devnet','testnet','mainnet'].forEach(n =>
+    document.getElementById('netNote' + n.charAt(0).toUpperCase() + n.slice(1)).style.display = n === net ? '' : 'none');
+  // Set default URL
+  const def = NETWORK_DEFAULTS[net];
+  if (def.url && !document.getElementById('validatorUrl').value) {
+    document.getElementById('validatorUrl').value = def.url;
+  } else if (def.url) {
+    document.getElementById('validatorUrl').value = def.url;
+  } else {
+    document.getElementById('validatorUrl').value = '';
+  }
+  // Badge
+  const badge = document.getElementById('netBadge');
+  badge.textContent = def.label;
+  badge.className = 'network-badge ' + net;
+  setConnState('disconnected', 'Not connected');
+}
+
+// ── Connection state ──────────────────────────────────────────
+function setConnState(state, text) {
+  connectionState = state;
+  const dot = document.getElementById('connDot');
+  const txt = document.getElementById('connText');
+  dot.className = 'conn-dot ' + state;
+  txt.textContent = text;
+}
+
+// ── Test connection to validator ──────────────────────────────
+async function testConnection() {
+  if (DEMO_MODE) { toast('Demo Mode — no real connection.', 'info'); return; }
+  const url = document.getElementById('validatorUrl').value.trim();
+  if (!url) { toast('Enter a validator URL first.', 'warn'); return; }
+  setConnState('checking', 'Checking…');
+  try {
+    const headers = buildHeaders();
+    // Try health endpoint
+    const res = await fetchWithTimeout(url + API.health, { headers }, 6000);
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const version = data.version || 'connected';
+      setConnState('connected', `Connected — ${version}`);
+      document.getElementById('liveRibbon').classList.add('show');
+      document.getElementById('liveRibbonText').innerHTML =
+        `<strong>${NETWORK_DEFAULTS[selectedNetwork].label}</strong> — validator responding (${version})`;
+      document.querySelector('.page').style.paddingTop = '140px';
+      toast('Validator connected!', 'success');
+    } else {
+      setConnState('error', `HTTP ${res.status}`);
+      toast(`Validator returned ${res.status}. Check URL/token.`, 'error');
+    }
+  } catch(e) {
+    setConnState('error', 'Connection failed');
+    toast(`Cannot reach validator: ${e.message}`, 'error', 5000);
+  }
+}
+
+function buildHeaders() {
+  const h = { 'Content-Type': 'application/json' };
+  const token = document.getElementById('authToken').value.trim();
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+
+async function fetchWithTimeout(url, opts, ms) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+  finally { clearTimeout(id); }
+}
+
+// ── Canton Ledger API calls ────────────────────────────────────
+async function cantonGetPartyId(displayName) {
+  // POST to onboarding endpoint to register the party
+  const url = document.getElementById('validatorUrl').value.trim();
+  if (!url) return null;
+  try {
+    // 1. Check if already onboarded
+    const statusRes = await fetchWithTimeout(url + API.party, { headers: buildHeaders() }, 8000);
+    if (statusRes.ok) {
+      const status = await statusRes.json();
+      // Splice wallet returns party_id in user status
+      if (status.party_id) return status.party_id;
+    }
+    // 2. Try onboarding endpoint
+    const onboardRes = await fetchWithTimeout(url + API.onboard, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify({ party_hint: displayName.toLowerCase().replace(/\s+/g,'_') })
+    }, 10000);
+    if (onboardRes.ok) {
+      const data = await onboardRes.json();
+      return data.party_id || data.partyId || null;
+    }
+  } catch(e) {
+    console.warn('Canton API error:', e);
+  }
+  return null;
+}
+
+async function fetchActivity() {
+  if (DEMO_MODE || !currentWallet || connectionState !== 'connected') {
+    renderDemoActivity(); return;
+  }
+  const url = document.getElementById('validatorUrl').value.trim();
+  if (!url) return;
+  try {
+    const res = await fetchWithTimeout(url + API.txs, { headers: buildHeaders() }, 8000);
+    if (res.ok) {
+      const data = await res.json();
+      const txs = data.transactions || data.items || [];
+      renderActivity(txs);
+    }
+  } catch(e) {
+    console.warn('Activity fetch failed:', e);
+  }
+}
+
+function renderActivity(txs) {
+  const list = document.getElementById('activityList');
+  const empty = document.getElementById('activityEmpty');
+  if (!txs.length) { empty.style.display=''; return; }
+  empty.style.display = 'none';
+  list.innerHTML = txs.slice(0,8).map(tx => `
+    <div class="activity-item">
+      <div class="activity-type">${tx.type || tx.template_id?.split(':').pop() || 'Tx'}</div>
+      <div class="activity-detail">${tx.contract_id || tx.event_id || tx.id || '—'}</div>
+      <div class="activity-time">${tx.recorded_at ? new Date(tx.recorded_at).toLocaleTimeString() : ''}</div>
+    </div>`).join('');
+}
+
+function renderDemoActivity() {
+  const list = document.getElementById('activityList');
+  document.getElementById('activityEmpty').style.display = 'none';
+  const now = new Date();
+  const items = [
+    { type:'WalletAppInstall', id:'#contract::demo-001', t: new Date(now-60000) },
+    { type:'ValidatorRight',   id:'#contract::demo-002', t: new Date(now-120000) },
+    { type:'AmuletRules',      id:'#contract::demo-003', t: new Date(now-300000) },
+  ];
+  list.innerHTML = items.map(i => `
+    <div class="activity-item">
+      <div class="activity-type">${i.type}</div>
+      <div class="activity-detail">${i.id}</div>
+      <div class="activity-time">${i.t.toLocaleTimeString()}</div>
+    </div>`).join('');
+}
+
+// ── Utilities ─────────────────────────────────────────────────
+function b64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+function b64urlDec(s) {
+  s = s.replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4) s+='=';
+  return Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+}
+function hexOf(buf) { return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function shortHex(h,n=8) { return h.slice(0,n)+'…'+h.slice(-4); }
+function nowTs() { return new Date().toLocaleString(); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Storage ───────────────────────────────────────────────────
+function loadWallets() { try { return JSON.parse(localStorage.getItem(DB_KEY)||'[]'); } catch { return []; } }
+function saveWallet(w) {
+  const ws=loadWallets(), i=ws.findIndex(x=>x.credentialId===w.credentialId);
+  if(i>=0) ws[i]=w; else ws.push(w);
+  localStorage.setItem(DB_KEY, JSON.stringify(ws));
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, type='info', dur=3500) {
+  const c=document.getElementById('toastWrap');
+  const t=document.createElement('div'); t.className=`toast ${type}`;
+  t.innerHTML=`<div class="toast-dot"></div><span>${msg}</span>`; c.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0';t.style.transform='translateX(12px)';t.style.transition='all 0.25s';setTimeout(()=>t.remove(),250); }, dur);
+}
+
+// ── Tab / panel switching ─────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='create')||(i===1&&tab==='recover')));
+  document.getElementById('createPanel').classList.toggle('active', tab==='create');
+  document.getElementById('recoverPanel').classList.toggle('active', tab==='recover');
+  if(tab==='recover') loadStoredList();
+}
+function loadStoredList() {
+  const ws=loadWallets(), wrap=document.getElementById('storedWrap'),
+    list=document.getElementById('storedList'), none=document.getElementById('noStoredMsg');
+  list.innerHTML='';
+  if(!ws.length){wrap.style.display='none';none.style.display='block';return;}
+  none.style.display='none';wrap.style.display='block';
+  ws.forEach(w=>{
+    const el=document.createElement('button');el.className='stored-item';
+    el.innerHTML=`<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="var(--accent)" stroke-width="1.3"/><circle cx="9" cy="9" r="3" fill="var(--accent)" opacity="0.3"/></svg>
+      <div><div class="stored-item-name">${escHtml(w.displayName)}</div><div class="stored-item-ts">${escHtml(w.network||'—')} · ${escHtml(w.createdAt)}</div></div>`;
+    el.onclick=()=>authenticateWallet(w);list.appendChild(el);
+  });
+}
+
+// ── Demo delay ────────────────────────────────────────────────
+async function simulateDelay(label, ms=1300) {
+  toast(`[Demo] ${label}`, 'info', ms+400);
+  await new Promise(r=>setTimeout(r,ms));
+}
+
+// ── Create wallet ─────────────────────────────────────────────
+async function createWallet() {
+  const nameEl=document.getElementById('createName'), name=nameEl.value.trim();
+  if(!name){toast('Enter a display name.','error');nameEl.focus();return;}
+  const btn=document.getElementById('createBtn'),orig=btn.innerHTML;
+  btn.disabled=true;btn.innerHTML=`<span class="spinner"></span> Waiting for biometric…`;
+  try {
+    let credIdHex;
+    // 1. Passkey
+    if(DEMO_MODE){
+      await simulateDelay('Biometric prompt simulated');
+      credIdHex=hexOf(crypto.getRandomValues(new Uint8Array(32)));
+    } else {
+      if(!window.PublicKeyCredential) throw new Error('WebAuthn not available');
+      const rpId = location.hostname||'localhost';
+      const cred = await navigator.credentials.create({ publicKey:{
+        challenge:crypto.getRandomValues(new Uint8Array(32)),
+        rp:{ name:'selfdriven CantonWallet', id:rpId },
+        user:{ id:crypto.getRandomValues(new Uint8Array(16)), name:name.toLowerCase().replace(/\s+/g,'.')+'@selfdriven.id', displayName:name },
+        pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+        authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},
+        timeout:60000, attestation:'none'
+      }});
+      credIdHex=hexOf(cred.rawId);
+    }
+
+    // 2. Try to get real party ID from Canton validator
+    btn.innerHTML=`<span class="spinner"></span> Registering party on Canton…`;
+    let partyId = null;
+    if(!DEMO_MODE && connectionState==='connected') {
+      toast('Requesting party allocation from validator…', 'info', 3000);
+      partyId = await cantonGetPartyId(name);
+      if(partyId) toast('Party ID allocated by validator!', 'success');
+      else toast('Party allocation failed — using local ID.', 'warn');
+    }
+    // Fallback: generate local party ID
+    if(!partyId) {
+      const net = selectedNetwork;
+      partyId = name.toLowerCase().replace(/[^a-z0-9]/g,'_')+'::'+credIdHex.slice(0,12)+'::'+net;
+    }
+
+    const wallet = {
+      displayName:name, credentialId:credIdHex, credentialIdHex:credIdHex,
+      partyId, createdAt:nowTs(),
+      network:NETWORK_DEFAULTS[selectedNetwork].label,
+      validatorUrl:document.getElementById('validatorUrl').value.trim(),
+      deviceType:DEMO_MODE?'Demo Mode (simulated)':getPlatform(),
+      demo:DEMO_MODE, liveParty:!!partyId&&connectionState==='connected'
+    };
+    saveWallet(wallet);
+    toast(DEMO_MODE?'Demo wallet created!':'Wallet created — passkey registered.','success');
+    showWallet(wallet);
+  } catch(err) {
+    if(err.name==='NotAllowedError') toast('Biometric prompt dismissed.','error');
+    else if(err.name==='InvalidStateError') toast('Passkey already exists for this user.','error');
+    else toast('Error: '+err.message,'error');
+  } finally { btn.disabled=false;btn.innerHTML=orig; }
+}
+
+// ── Authenticate ──────────────────────────────────────────────
+async function authenticateWallet(storedWallet) {
+  toast('Requesting authentication…','info',2000);
+  try {
+    if(DEMO_MODE){
+      await simulateDelay('Verifying passkey');
+      const ws=loadWallets(), w=storedWallet||ws[0];
+      if(!w){toast('No demo wallets found. Create one first.','error');return;}
+      toast('Authentication successful!','success');showWallet(w);return;
+    }
+    if(!window.PublicKeyCredential){toast('WebAuthn not supported.','error');return;}
+    const opts={challenge:crypto.getRandomValues(new Uint8Array(32)),rpId:location.hostname||'localhost',userVerification:'required',timeout:60000};
+    if(storedWallet) opts.allowCredentials=[{type:'public-key',id:b64urlDec(storedWallet.credentialId)}];
+    const assertion=await navigator.credentials.get({publicKey:opts});
+    const credIdHex=hexOf(assertion.rawId);
+    let wallet=loadWallets().find(w=>w.credentialIdHex===credIdHex)||storedWallet||null;
+    if(!wallet){
+      wallet={displayName:'Recovered Wallet',credentialId:credIdHex,credentialIdHex:credIdHex,
+        partyId:credIdHex.slice(0,12)+'::recovered::'+selectedNetwork,
+        createdAt:nowTs(),network:NETWORK_DEFAULTS[selectedNetwork].label,deviceType:getPlatform()};
+      saveWallet(wallet);
+    }
+    // Try to refresh party ID from live validator
+    if(connectionState==='connected'){
+      const liveParty=await cantonGetPartyId(wallet.displayName);
+      if(liveParty){ wallet.partyId=liveParty; wallet.liveParty=true; saveWallet(wallet); }
+    }
+    toast('Authentication successful!','success');showWallet(wallet);
+  } catch(err){
+    if(err.name==='NotAllowedError') toast('Authentication dismissed.','error');
+    else toast('Auth error: '+err.message,'error');
+  }
+}
+
+// ── Sign payload ──────────────────────────────────────────────
+async function signTestPayload() {
+  if(!currentWallet) return;
+  toast('Requesting passkey signature…','info',2000);
+  try {
+    let sigHex;
+    if(DEMO_MODE||currentWallet.demo){
+      await simulateDelay('Signing Canton transfer payload',900);
+      sigHex=hexOf(crypto.getRandomValues(new Uint8Array(64)));
+    } else {
+      const payload={action:'canton:transfer',party:currentWallet.partyId,network:selectedNetwork,ts:Date.now()};
+      const assertion=await navigator.credentials.get({publicKey:{
+        challenge:new TextEncoder().encode(JSON.stringify(payload)),
+        rpId:location.hostname||'localhost',userVerification:'required',
+        allowCredentials:[{type:'public-key',id:b64urlDec(currentWallet.credentialId)}],timeout:60000
+      }});
+      sigHex=hexOf(assertion.response.signature);
+      // In production: POST sigHex to your backend → exchange for JWT → use on Ledger API
+      toast('Signature obtained. In production: exchange for JWT on Ledger API.','info',6000);
+    }
+    toast('Sig: '+sigHex.slice(0,16)+'…','success',5000);
+  } catch(e){ toast('Signing cancelled.','error'); }
+}
+
+// ── Export ────────────────────────────────────────────────────
+function exportIdentity() {
+  if(!currentWallet) return;
+  const out={...currentWallet,exportedAt:new Date().toISOString(),
+    cantonOnboardingDocs:'https://docs.dev.sync.global/validator_operator/validator_onboarding.html',
+    note:'No private key material. Passkey private key remains on device.'};
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`selfdriven-canton-wallet-${currentWallet.displayName.replace(/\s+/g,'-')}.json`;
+  a.click();toast('Identity exported.','success');
+}
+
+// ── Copy ──────────────────────────────────────────────────────
+function copyPartyId(){
+  if(!currentWallet) return;
+  navigator.clipboard.writeText(currentWallet.partyId)
+    .then(()=>toast('Party ID copied!','success')).catch(()=>toast('Copy failed.','error'));
+}
+
+// ── Platform ──────────────────────────────────────────────────
+function getPlatform(){
+  const ua=navigator.userAgent;
+  if(/iPhone|iPad/.test(ua)) return 'Face ID / Touch ID';
+  if(/Mac/.test(ua)) return 'Touch ID (macOS)';
+  if(/Android/.test(ua)) return 'Fingerprint / Face';
+  if(/Win/.test(ua)) return 'Windows Hello';
+  return 'Platform Authenticator';
+}
+
+// ── Show wallet dashboard ─────────────────────────────────────
+function showWallet(wallet){
+  currentWallet=wallet;
+  document.getElementById('heroSection').style.display='none';
+  document.getElementById('authCard').style.display='none';
+  document.getElementById('walletView').classList.add('active');
+  document.getElementById('wName').textContent=wallet.displayName;
+  document.getElementById('wPartyId').textContent=wallet.partyId;
+  document.getElementById('wNetwork').textContent=wallet.network||'—';
+  document.getElementById('wValidator').textContent=wallet.validatorUrl||'Demo / Local';
+  document.getElementById('wCreatedAt').textContent=wallet.createdAt||'—';
+  document.getElementById('wDevice').textContent=wallet.deviceType||getPlatform();
+  document.getElementById('wDeviceType').textContent=wallet.demo?'Demo Mode · Simulated ES256':'Platform Authenticator · ES256';
+  const pill=document.getElementById('dashStatus');
+  if(wallet.liveParty){ pill.textContent='Live · Canton'; pill.style.background='rgba(34,197,94,0.08)'; }
+  else if(wallet.demo){ pill.textContent='Demo'; pill.style.background='rgba(200,68,47,0.08)'; pill.style.color='var(--accent)'; pill.style.borderColor='rgba(200,68,47,0.2)'; }
+  fetchActivity();
+}
+
+// ── Logout ────────────────────────────────────────────────────
+function logout(){
+  currentWallet=null;
+  document.getElementById('walletView').classList.remove('active');
+  document.getElementById('heroSection').style.display='';
+  document.getElementById('authCard').style.display='';
+  toast('Signed out.','info',2000);
+}
+
+// ── Init ──────────────────────────────────────────────────────
+checkOrigin();
+selectNetwork('devnet');
+window.addEventListener('scroll', () =>
+  document.getElementById('mainNav').classList.toggle('scrolled', scrollY > 20));
+if(!window.PublicKeyCredential && !DEMO_MODE){
+  document.getElementById('compatWarning').classList.add('show');
+  document.getElementById('createBtn').disabled=true;
+}
+</script>
+</body>
+</html>
