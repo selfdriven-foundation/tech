@@ -1,0 +1,9 @@
+title: "selfdriven Tech"
+description: "The technology powering the selfdriven Organisational System (selfdrivenOS)"
+context: "tech"
+baseurl: ""
+url: ""
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag

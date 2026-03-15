@@ -1,11 +1,11 @@
 ---
-layout: default
-title: Home
+layout: selfdriven
+title: selfdriven Tech
 ---
 
-## The technology powering the selfdriven Organisational System (selfdrivenOS)
+# The technology powering the selfdriven Organisational System (selfdrivenOS)
 
-### Interface Code
+## Interface Code
 - [Human](https://github.com/selfdriven-tech/interface-human)
 - [Social](https://github.com/selfdriven-tech/interface-social)
 - [SSI](https://github.com/selfdriven-tech/interface-ssi)
@@ -15,12 +15,12 @@ title: Home
 - [OnChain](https://github.com/selfdriven-tech/interface-onchain)
 - [Infra](https://github.com/selfdriven-tech/interface-infra)
 
-### Related
+## Related
 - [selfdriven.network](https://selfdriven.network) - Interfaces
 - [selfdriven.id](https://selfdriven.id) - Identity, Trust, SSI
 - [selfdriven.social](https://selfdriven.social) - AT Protocol.
 - [selfdriven.ai](https://selfdriven.ai) - Intelligence services.
 
-### References
+## References
 - [OnChain](https://selfdriven.fyi/on-chain) - Why Cardano?
 - [x402.org](https://x402.org) - Open Protocol Internet-Native Payments
