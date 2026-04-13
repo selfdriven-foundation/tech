@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Post-Quantum Cryptography — NIST Selected Algorithms</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1318;
+    --surface2: #131c24;
+    --border: #1e2d3d;
+    --text: #c8d8e8;
+    --muted: #5a7a92;
+    --accent-ml: #00d4ff;
+    --accent-lc: #a855f7;
+    --accent-hash: #22c55e;
+    --accent-warn: #f59e0b;
+    --accent-red: #ef4444;
+    --glow-ml: rgba(0,212,255,0.15);
+    --glow-lc: rgba(168,85,247,0.15);
+    --glow-hash: rgba(34,197,94,0.15);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 60px 40px 50px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    overflow: visible;
+  }
+
+  .threat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #ef4444;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 2px;
+    margin-bottom: 28px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .threat-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.4; transform:scale(1.3); }
+  }
+
+  h1 {
+    font-family: 'Barlow', sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+    line-height: normal;
+    letter-spacing: -0.02em;
+    margin: 0 0 24px;
+    color: white;
+    display: block;
+  }
+
+  .h1-cyan {
+    color: #00d4ff;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 1rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+    max-width: 600px;
+    margin: 0 auto 32px;
+    line-height: 1.6;
+  }
+
+  /* NAV TABS */
+  .nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 10;
+    padding: 24px 40px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    position: relative;
+    bottom: -1px;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+
+  .tab-btn.active {
+    background: var(--surface);
+    border-color: var(--border);
+    border-bottom-color: var(--surface);
+    color: white;
+  }
+
+  .tab-btn.ml.active { color: var(--accent-ml); border-top-color: var(--accent-ml); }
+  .tab-btn.lc.active { color: var(--accent-lc); border-top-color: var(--accent-lc); }
+  .tab-btn.hash.active { color: var(--accent-hash); border-top-color: var(--accent-hash); }
+
+  /* MAIN CONTENT */
+  main {
+    position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* === OVERVIEW PANEL === */
+  .threat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  @media(max-width:700px) { .threat-grid { grid-template-columns: 1fr; } }
+
+  .threat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .threat-card.danger { border-left: 3px solid var(--accent-red); }
+  .threat-card.safe { border-left: 3px solid var(--accent-hash); }
+
+  .threat-card h3 {
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .threat-card p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .algo-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .algo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .algo-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .algo-card.ml::after { background: var(--glow-ml); }
+  .algo-card.lc::after { background: var(--glow-lc); }
+  .algo-card.hash::after { background: var(--glow-hash); }
+
+  .algo-card:hover::after { opacity: 1; }
+  .algo-card:hover { transform: translateY(-2px); border-color: #2a3d50; }
+
+  .algo-tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-bottom: 12px;
+  }
+
+  .ml .algo-tag { background: rgba(0,212,255,0.1); color: var(--accent-ml); }
+  .lc .algo-tag { background: rgba(168,85,247,0.1); color: var(--accent-lc); }
+  .hash .algo-tag { background: rgba(34,197,94,0.1); color: var(--accent-hash); }
+
+  .algo-card h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: white;
+  }
+
+  .algo-card .purpose {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .algo-card p {
+    font-size: 0.9rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* === ALGORITHM DETAIL PANEL === */
+  .algo-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .algo-header h2 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: white;
+  }
+
+  .spec-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .spec-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 2px;
+    color: var(--muted);
+  }
+
+  .spec-pill span { color: white; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  @media(max-width:700px) { .two-col { grid-template-columns: 1fr; } }
+
+  .info-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+  }
+
+  .info-box h4 {
+    font-size: 0.72rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .info-box p, .info-box li {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .info-box ul { padding-left: 16px; }
+  .info-box li { margin-bottom: 6px; }
+
+  /* VISUALIZER */
+  .visualizer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  .vis-title {
+    font-size: 0.72rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  /* LATTICE VIS */
+  #lattice-canvas {
+    width: 100%;
+    height: 300px;
+    display: block;
+    border-radius: 2px;
+    background: var(--bg);
+  }
+
+  /* HASH VIS */
+  .hash-demo {
+    font-family: 'Space Mono', monospace;
+  }
+
+  .hash-input-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .hash-input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: white;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .hash-input:focus { border-color: var(--accent-hash); }
+
+  .btn {
+    background: transparent;
+    border: 1px solid;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  .btn-ml { border-color: var(--accent-ml); color: var(--accent-ml); }
+  .btn-ml:hover { background: rgba(0,212,255,0.1); }
+  .btn-lc { border-color: var(--accent-lc); color: var(--accent-lc); }
+  .btn-lc:hover { background: rgba(168,85,247,0.1); }
+  .btn-hash { border-color: var(--accent-hash); color: var(--accent-hash); }
+  .btn-hash:hover { background: rgba(34,197,94,0.1); }
+
+  .hash-output {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .hash-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .hash-value {
+    font-size: 0.75rem;
+    color: var(--accent-hash);
+    word-break: break-all;
+    line-height: 1.6;
+    transition: all 0.3s;
+  }
+
+  .hash-diff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  @media(max-width:600px) { .hash-diff { grid-template-columns: 1fr; } }
+
+  /* ECC vs PQ compare */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  @media(max-width:600px) { .compare-grid { grid-template-columns: 1fr; } }
+
+  .compare-cell {
+    background: var(--surface);
+    padding: 20px 24px;
+  }
+
+  .compare-cell h4 {
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .compare-cell.classical h4 { color: var(--accent-red); }
+  .compare-cell.pq h4 { color: var(--accent-hash); }
+
+  .compare-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row .label { color: var(--muted); font-size: 0.8rem; }
+  .compare-row .val { font-family: 'Space Mono', monospace; font-size: 0.8rem; }
+
+  /* SECURITY LEVELS TABLE */
+  .sec-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+
+  .sec-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sec-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  .sec-table tr:last-child td { border-bottom: none; }
+
+  .sec-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 0.7rem;
+  }
+
+  .sec-1 { background: rgba(34,197,94,0.1); color: #22c55e; }
+  .sec-3 { background: rgba(245,158,11,0.1); color: #f59e0b; }
+  .sec-5 { background: rgba(0,212,255,0.1); color: #00d4ff; }
+
+  /* STEP WALKTHROUGH */
+  .steps-wrapper {
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .steps-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .step-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .step-dot.active-ml { background: rgba(0,212,255,0.15); border-color: var(--accent-ml); color: var(--accent-ml); }
+  .step-dot.active-lc { background: rgba(168,85,247,0.15); border-color: var(--accent-lc); color: var(--accent-lc); }
+  .step-dot.active-hash { background: rgba(34,197,94,0.15); border-color: var(--accent-hash); color: var(--accent-hash); }
+
+  .step-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    min-height: 200px;
+  }
+
+  .step-content h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: white;
+  }
+
+  .step-content p {
+    font-size: 0.92rem;
+    line-height: 1.75;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 14px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: #7dd3fc;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin-top: 12px;
+  }
+
+  .code-block .comment { color: var(--muted); }
+  .code-block .kw { color: var(--accent-lc); }
+  .code-block .val { color: var(--accent-ml); }
+  .code-block .fn { color: var(--accent-hash); }
+
+  /* INTERACTIVE KEYGEN */
+  .keygen-demo {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    margin-top: 16px;
+  }
+
+  .keygen-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  @media(max-width:600px) { .keygen-row { grid-template-columns: 1fr; } }
+
+  .key-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 14px;
+  }
+
+  .key-display .key-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .key-display .key-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    word-break: break-all;
+    line-height: 1.5;
+    color: #7dd3fc;
+  }
+
+  .key-display.pub .key-val { color: var(--accent-ml); }
+  .key-display.priv .key-val { color: var(--accent-lc); filter: blur(4px); transition: filter 0.3s; }
+  .key-display.priv:hover .key-val { filter: blur(0); }
+
+  /* PROGRESS BAR */
+  .timeline-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 32px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .timeline-seg {
+    flex: 1;
+    padding: 12px 16px;
+    background: var(--surface);
+    font-size: 0.78rem;
+    font-family: 'Space Mono', monospace;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    cursor: default;
+    transition: background 0.2s;
+  }
+
+  .timeline-seg:last-child { border-right: none; }
+  .timeline-seg.past { background: rgba(239,68,68,0.08); color: var(--accent-red); }
+  .timeline-seg.now { background: rgba(245,158,11,0.12); color: var(--accent-warn); }
+  .timeline-seg.future { background: rgba(34,197,94,0.08); color: var(--accent-hash); }
+
+  .timeline-seg .year { font-weight: 700; display: block; font-size: 0.95rem; margin-bottom: 4px; }
+  .timeline-seg .desc { font-size: 0.65rem; opacity: 0.8; }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 32px;
+    border-top: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  footer a { color: var(--accent-ml); text-decoration: none; }
+
+  /* QUANTUM COMPUTER VIS */
+  .quantum-vis {
+    position: relative;
+    height: 200px;
+    background: var(--bg);
+    border-radius: 2px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .qubit-ring {
+    position: absolute;
+    border: 1px solid;
+    border-radius: 50%;
+    animation: spin linear infinite;
+    opacity: 0.5;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .security-meter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .meter-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    width: 140px;
+    flex-shrink: 0;
+  }
+
+  .meter-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease;
+  }
+
+  .meter-fill.broken { background: var(--accent-red); }
+  .meter-fill.strong { background: var(--accent-hash); }
+  .meter-fill.medium { background: var(--accent-warn); }
+
+  .meter-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* SPHINCS VIS */
+  .tree-vis {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 0;
+  }
+
+  .tree-level {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .tree-node {
+    width: 36px; height: 36px;
+    border: 1px solid;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    transition: all 0.3s;
+    cursor: default;
+  }
+
+  .node-root { border-color: var(--accent-hash); color: var(--accent-hash); background: rgba(34,197,94,0.1); }
+  .node-internal { border-color: var(--border); color: var(--muted); }
+  .node-internal.highlighted { border-color: var(--accent-hash); color: var(--accent-hash); background: rgba(34,197,94,0.05); }
+  .node-leaf { border-color: rgba(100,160,100,0.3); color: #4a8a50; font-size: 0.55rem; }
+
+  .tree-connector {
+    display: flex;
+    justify-content: center;
+    height: 12px;
+    position: relative;
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="threat-badge">Quantum Threat — Active Timeline</div>
+  <h1>Post-Quantum <span class="h1-cyan">Cryptography</span></h1>
+  <p class="subtitle">// NIST FIPS 203 · 204 · 205 — Selected algorithms for the post-quantum era</p>
+</header>
+
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+  <button class="tab-btn ml" onclick="showTab('mlkem')">ML-KEM</button>
+  <button class="tab-btn lc" onclick="showTab('mldsa')">ML-DSA</button>
+  <button class="tab-btn hash" onclick="showTab('slhdsa')">SLH-DSA</button>
+  <button class="tab-btn" onclick="showTab('compare')">Compare</button>
+</nav>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+
+    <div class="timeline-bar">
+      <div class="timeline-seg past">
+        <span class="year">1994</span>
+        <span class="desc">Shor's Algorithm</span>
+      </div>
+      <div class="timeline-seg past">
+        <span class="year">2016</span>
+        <span class="desc">NIST PQC Call</span>
+      </div>
+      <div class="timeline-seg past">
+        <span class="year">2022</span>
+        <span class="desc">Finalists Selected</span>
+      </div>
+      <div class="timeline-seg now">
+        <span class="year">2024</span>
+        <span class="desc">FIPS 203/204/205</span>
+      </div>
+      <div class="timeline-seg future">
+        <span class="year">2030+</span>
+        <span class="desc">CRQC Risk Window</span>
+      </div>
+    </div>
+
+    <div class="threat-grid">
+      <div class="threat-card danger">
+        <h3>⚠ The Quantum Threat</h3>
+        <p>Shor's algorithm can factor large integers and solve discrete logarithm problems in polynomial time on a cryptographically relevant quantum computer (CRQC). This breaks RSA, ECDSA, ECDH, and DH — the foundations of current internet security.</p>
+      </div>
+      <div class="threat-card safe">
+        <h3>✓ The PQC Response</h3>
+        <p>Post-quantum cryptography uses mathematical problems believed hard for both classical <em>and</em> quantum computers. NIST standardised three algorithms in 2024 based on lattice problems and hash functions — immune to Shor's and Grover's algorithms.</p>
+      </div>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <div class="info-box" style="margin-bottom:16px;">
+        <h4>Security Levels Under Quantum Attack</h4>
+        <div style="margin-top:16px;">
+          <div class="security-meter">
+            <span class="meter-label">RSA-2048</span>
+            <div class="meter-bar"><div class="meter-fill broken" id="m1" style="width:0%"></div></div>
+            <span class="meter-val" style="color:var(--accent-red)">BROKEN</span>
+          </div>
+          <div class="security-meter">
+            <span class="meter-label">ECDSA P-256</span>
+            <div class="meter-bar"><div class="meter-fill broken" id="m2" style="width:0%"></div></div>
+            <span class="meter-val" style="color:var(--accent-red)">BROKEN</span>
+          </div>
+          <div class="security-meter">
+            <span class="meter-label">AES-128 (symmetric)</span>
+            <div class="meter-bar"><div class="meter-fill medium" id="m3" style="width:0%"></div></div>
+            <span class="meter-val" style="color:var(--accent-warn)">64-bit QS</span>
+          </div>
+          <div class="security-meter">
+            <span class="meter-label">ML-KEM-768</span>
+            <div class="meter-bar"><div class="meter-fill strong" id="m4" style="width:0%"></div></div>
+            <span class="meter-val" style="color:var(--accent-hash)">Level 3</span>
+          </div>
+          <div class="security-meter">
+            <span class="meter-label">ML-DSA-87</span>
+            <div class="meter-bar"><div class="meter-fill strong" id="m5" style="width:0%"></div></div>
+            <span class="meter-val" style="color:var(--accent-hash)">Level 5</span>
+          </div>
+          <div class="security-meter">
+            <span class="meter-label">SLH-DSA-256s</span>
+            <div class="meter-bar"><div class="meter-fill strong" id="m6" style="width:0%"></div></div>
+            <span class="meter-val" style="color:var(--accent-hash)">Level 5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="color:var(--muted); font-size:0.85rem; margin-bottom:16px; font-family:'Space Mono',monospace;">// Click an algorithm to explore its construction →</p>
+
+    <div class="algo-cards">
+      <div class="algo-card ml" onclick="showTab('mlkem')">
+        <span class="algo-tag">FIPS 203 · KEM</span>
+        <h3>ML-KEM</h3>
+        <div class="purpose">Key Encapsulation Mechanism</div>
+        <p>Based on Module Learning With Errors (MLWE). Replaces RSA/ECDH for key exchange. Three parameter sets: 512, 768, 1024.</p>
+      </div>
+      <div class="algo-card lc" onclick="showTab('mldsa')">
+        <span class="algo-tag">FIPS 204 · Signature</span>
+        <h3>ML-DSA</h3>
+        <div class="purpose">Digital Signature Algorithm</div>
+        <p>Based on Module Learning With Errors. Replaces ECDSA/RSA-PSS for digital signatures. Three variants: 44, 65, 87.</p>
+      </div>
+      <div class="algo-card hash" onclick="showTab('slhdsa')">
+        <span class="algo-tag">FIPS 205 · Signature</span>
+        <h3>SLH-DSA</h3>
+        <div class="purpose">Stateless Hash-Based Signatures</div>
+        <p>Based purely on hash functions (SHA-256, SHAKE). Conservative backup. Larger signatures. 12 parameter sets.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ML-KEM -->
+  <div class="panel" id="panel-mlkem">
+    <div class="algo-header">
+      <div>
+        <span class="algo-tag ml" style="display:inline-block;margin-bottom:8px;">FIPS 203 · 2024</span>
+        <h2 style="color:var(--accent-ml)">ML-KEM</h2>
+        <p style="color:var(--muted); font-family:'Space Mono',monospace; font-size:0.8rem; margin-top:6px;">Module Lattice-based Key Encapsulation Mechanism</p>
+      </div>
+      <div class="spec-pills">
+        <div class="spec-pill">Based on: <span>MLWE problem</span></div>
+        <div class="spec-pill">Formerly: <span>CRYSTALS-Kyber</span></div>
+        <div class="spec-pill">NTT ring: <span>ℤ_q[x]/(xⁿ+1)</span></div>
+      </div>
+    </div>
+
+    <!-- LATTICE VIS -->
+    <div class="visualizer">
+      <div class="vis-title">// Interactive Lattice Visualisation — move mouse over canvas</div>
+      <canvas id="lattice-canvas"></canvas>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <div class="info-box" style="margin-bottom:0;">
+        <h4>Hard Problem — Learning With Errors</h4>
+        <p>Given a matrix <strong>A</strong> and vector <strong>b = As + e (mod q)</strong>, find the secret <strong>s</strong> — where <strong>e</strong> is a small-magnitude "error". With random <strong>A</strong> and appropriate parameters, this is computationally indistinguishable from a random vector even for quantum computers.</p>
+      </div>
+    </div>
+
+    <!-- STEP WALKTHROUGH -->
+    <div class="visualizer">
+      <div class="vis-title">// Protocol Walkthrough — Key Exchange</div>
+      <div class="steps-nav" id="mlkem-steps">
+        <div class="step-dot active-ml" onclick="showStep('mlkem',0)">1</div>
+        <div class="step-dot" onclick="showStep('mlkem',1)">2</div>
+        <div class="step-dot" onclick="showStep('mlkem',2)">3</div>
+        <div class="step-dot" onclick="showStep('mlkem',3)">4</div>
+      </div>
+      <div class="step-content" id="mlkem-step-content"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-ml" onclick="prevStep('mlkem')">← Prev</button>
+        <button class="btn btn-ml" onclick="nextStep('mlkem')">Next →</button>
+      </div>
+    </div>
+
+    <!-- KEYGEN DEMO -->
+    <div class="visualizer">
+      <div class="vis-title">// Simulate Key Generation (educational)</div>
+      <div class="keygen-demo">
+        <div class="keygen-row">
+          <div class="key-display pub">
+            <div class="key-label">Public Key (pk) — shareable</div>
+            <div class="key-val" id="mlkem-pk">— click Generate —</div>
+          </div>
+          <div class="key-display priv">
+            <div class="key-label">Secret Key (sk) — hover to reveal</div>
+            <div class="key-val" id="mlkem-sk">— click Generate —</div>
+          </div>
+        </div>
+        <div class="keygen-row">
+          <div class="key-display" style="border-color:rgba(0,212,255,0.2);">
+            <div class="key-label">Ciphertext (ct) — encapsulated secret</div>
+            <div class="key-val" id="mlkem-ct" style="color:var(--accent-ml);">— click Encapsulate after keygen —</div>
+          </div>
+          <div class="key-display" style="border-color:rgba(34,197,94,0.2);">
+            <div class="key-label">Shared Secret (ss) — derived by both sides</div>
+            <div class="key-val" id="mlkem-ss" style="color:var(--accent-hash);">— click Decapsulate —</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ml" onclick="mlkemKeygen()">KeyGen</button>
+          <button class="btn btn-ml" onclick="mlkemEncap()">Encapsulate</button>
+          <button class="btn btn-ml" onclick="mlkemDecap()">Decapsulate</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="info-box">
+        <h4>Parameter Sets</h4>
+        <table style="width:100%; border-collapse:collapse; font-family:'Space Mono',monospace; font-size:0.78rem;">
+          <tr style="color:var(--muted); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em;">
+            <td style="padding:6px 0;">Variant</td><td>Security</td><td>pk size</td><td>ct size</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:8px 0; color:white;">ML-KEM-512</td>
+            <td><span class="sec-badge sec-1">Level 1</span></td>
+            <td>800 B</td><td>768 B</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:8px 0; color:white;">ML-KEM-768</td>
+            <td><span class="sec-badge sec-3">Level 3</span></td>
+            <td>1184 B</td><td>1088 B</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:8px 0; color:white;">ML-KEM-1024</td>
+            <td><span class="sec-badge sec-5">Level 5</span></td>
+            <td>1568 B</td><td>1568 B</td>
+          </tr>
+        </table>
+      </div>
+      <div class="info-box">
+        <h4>Key Properties</h4>
+        <ul>
+          <li>IND-CCA2 secure under MLWE assumption</li>
+          <li>Uses Number Theoretic Transform (NTT) for efficient polynomial multiplication</li>
+          <li>Modulus q = 3329 (prime), n = 256</li>
+          <li>Deterministic using SHAKE-256 PRF</li>
+          <li>No forward secrecy issue — ephemeral use</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ML-DSA -->
+  <div class="panel" id="panel-mldsa">
+    <div class="algo-header">
+      <div>
+        <span class="algo-tag lc" style="display:inline-block;margin-bottom:8px;">FIPS 204 · 2024</span>
+        <h2 style="color:var(--accent-lc)">ML-DSA</h2>
+        <p style="color:var(--muted); font-family:'Space Mono',monospace; font-size:0.8rem; margin-top:6px;">Module Lattice-based Digital Signature Algorithm (Dilithium)</p>
+      </div>
+      <div class="spec-pills">
+        <div class="spec-pill">Based on: <span>MSIS + MLWE</span></div>
+        <div class="spec-pill">Formerly: <span>CRYSTALS-Dilithium</span></div>
+        <div class="spec-pill">Fiat-Shamir: <span>with aborts</span></div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:24px;">
+      <div class="info-box">
+        <h4>Hard Problem — MSIS</h4>
+        <p>Module Short Integer Solution: find a short vector <strong>z</strong> such that <strong>Az = 0 (mod q)</strong> in a lattice module. Combined with MLWE for the "Fiat-Shamir with aborts" construction that avoids leaking secret information through rejection sampling.</p>
+      </div>
+      <div class="info-box">
+        <h4>Fiat-Shamir with Aborts</h4>
+        <p>Unlike classical Schnorr signatures, the response vector may leak secret info if too large. ML-DSA uses rejection sampling: if the response exceeds a bound, the signing is aborted and restarted. This ensures the distribution is independent of the secret key.</p>
+      </div>
+    </div>
+
+    <!-- SIGNING WALKTHROUGH -->
+    <div class="visualizer">
+      <div class="vis-title">// Signing Protocol — Step by Step</div>
+      <div class="steps-nav" id="mldsa-steps">
+        <div class="step-dot active-lc" onclick="showStep('mldsa',0)">1</div>
+        <div class="step-dot" onclick="showStep('mldsa',1)">2</div>
+        <div class="step-dot" onclick="showStep('mldsa',2)">3</div>
+        <div class="step-dot" onclick="showStep('mldsa',3)">4</div>
+        <div class="step-dot" onclick="showStep('mldsa',4)">5</div>
+      </div>
+      <div class="step-content" id="mldsa-step-content"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-lc" onclick="prevStep('mldsa')">← Prev</button>
+        <button class="btn btn-lc" onclick="nextStep('mldsa')">Next →</button>
+      </div>
+    </div>
+
+    <!-- SIG SIZE VISUALISER -->
+    <div class="visualizer">
+      <div class="vis-title">// Signature Size Comparison</div>
+      <div id="sig-bars"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="info-box">
+        <h4>Parameter Sets</h4>
+        <table style="width:100%; border-collapse:collapse; font-family:'Space Mono',monospace; font-size:0.78rem;">
+          <tr style="color:var(--muted); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em;">
+            <td style="padding:6px 0;">Variant</td><td>Security</td><td>pk size</td><td>sig size</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:8px 0; color:white;">ML-DSA-44</td>
+            <td><span class="sec-badge sec-1">Level 2</span></td>
+            <td>1312 B</td><td>2420 B</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:8px 0; color:white;">ML-DSA-65</td>
+            <td><span class="sec-badge sec-3">Level 3</span></td>
+            <td>1952 B</td><td>3309 B</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:8px 0; color:white;">ML-DSA-87</td>
+            <td><span class="sec-badge sec-5">Level 5</span></td>
+            <td>2592 B</td><td>4627 B</td>
+          </tr>
+        </table>
+      </div>
+      <div class="info-box">
+        <h4>Security Properties</h4>
+        <ul>
+          <li>EUF-CMA secure (existentially unforgeable under chosen message attack)</li>
+          <li>Deterministic or randomised signing mode</li>
+          <li>Uses SHAKE-128/256 for hashing</li>
+          <li>NTT over ℤ_q with q = 8380417</li>
+          <li>Power analysis resistant by design</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLH-DSA -->
+  <div class="panel" id="panel-slhdsa">
+    <div class="algo-header">
+      <div>
+        <span class="algo-tag hash" style="display:inline-block;margin-bottom:8px;">FIPS 205 · 2024</span>
+        <h2 style="color:var(--accent-hash)">SLH-DSA</h2>
+        <p style="color:var(--muted); font-family:'Space Mono',monospace; font-size:0.8rem; margin-top:6px;">Stateless Hash-Based Digital Signature Algorithm (SPHINCS+)</p>
+      </div>
+      <div class="spec-pills">
+        <div class="spec-pill">Based on: <span>Hash functions only</span></div>
+        <div class="spec-pill">Formerly: <span>SPHINCS+</span></div>
+        <div class="spec-pill">Trees: <span>Hypertree XMSS</span></div>
+      </div>
+    </div>
+
+    <div class="info-box" style="margin-bottom:24px; border-left:3px solid var(--accent-hash);">
+      <h4>Why Hash-Based?</h4>
+      <p>SLH-DSA's security relies <em>only</em> on the collision resistance and one-wayness of SHA-256 or SHAKE. Unlike lattice schemes, its security assumptions are decades-old and extremely well-studied. It is the conservative "insurance policy" in the NIST portfolio — if lattice assumptions are unexpectedly broken, SLH-DSA remains secure.</p>
+    </div>
+
+    <!-- HASH DEMO -->
+    <div class="visualizer">
+      <div class="vis-title">// SHA-256 / SHAKE-256 — Avalanche Effect Demo</div>
+      <div class="hash-demo">
+        <div class="hash-input-row">
+          <input class="hash-input" id="hash-in-1" value="hello world" placeholder="Message 1">
+          <button class="btn btn-hash" onclick="runHash()">Hash Both</button>
+        </div>
+        <div class="hash-input-row">
+          <input class="hash-input" id="hash-in-2" value="hello world!" placeholder="Message 2 (try 1 char diff)">
+        </div>
+        <div class="hash-diff">
+          <div class="hash-output">
+            <div class="hash-label">SHA-256 of Message 1</div>
+            <div class="hash-value" id="hash-out-1">—</div>
+          </div>
+          <div class="hash-output">
+            <div class="hash-label">SHA-256 of Message 2</div>
+            <div class="hash-value" id="hash-out-2">—</div>
+          </div>
+        </div>
+        <div class="hash-output" id="hash-diff-row" style="display:none;">
+          <div class="hash-label">Bit difference (avalanche effect)</div>
+          <div id="hash-diff-vis" style="font-family:'Space Mono',monospace; font-size:0.72rem; line-height:1.8; word-break:break-all;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREE VIS -->
+    <div class="visualizer">
+      <div class="vis-title">// Merkle Tree — Root of Trust in SLH-DSA (simplified)</div>
+      <div class="tree-vis" id="tree-vis"></div>
+      <p style="font-family:'Space Mono',monospace; font-size:0.75rem; color:var(--muted); margin-top:12px;">SLH-DSA uses a hypertree of d=8 XMSS layers, each with h/d=8 leaves. The public key is only the top-level root hash (32 bytes).</p>
+    </div>
+
+    <!-- STEP WALKTHROUGH -->
+    <div class="visualizer">
+      <div class="vis-title">// SLH-DSA Signing Components</div>
+      <div class="steps-nav" id="slhdsa-steps">
+        <div class="step-dot active-hash" onclick="showStep('slhdsa',0)">1</div>
+        <div class="step-dot" onclick="showStep('slhdsa',1)">2</div>
+        <div class="step-dot" onclick="showStep('slhdsa',2)">3</div>
+        <div class="step-dot" onclick="showStep('slhdsa',3)">4</div>
+      </div>
+      <div class="step-content" id="slhdsa-step-content"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-hash" onclick="prevStep('slhdsa')">← Prev</button>
+        <button class="btn btn-hash" onclick="nextStep('slhdsa')">Next →</button>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="info-box">
+        <h4>Key Variants (SHA-256 family)</h4>
+        <table style="width:100%; border-collapse:collapse; font-family:'Space Mono',monospace; font-size:0.75rem;">
+          <tr style="color:var(--muted); font-size:0.68rem; text-transform:uppercase;">
+            <td style="padding:5px 0;">Variant</td><td>Sig Size</td><td>Speed</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:7px 0; color:white;">sha2-128s</td><td>7856 B</td><td>Slow</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:7px 0; color:white;">sha2-128f</td><td>17088 B</td><td>Fast</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:7px 0; color:white;">sha2-256s</td><td>29792 B</td><td>Slow</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border);">
+            <td style="padding:7px 0; color:white;">sha2-256f</td><td>49856 B</td><td>Fast</td>
+          </tr>
+        </table>
+      </div>
+      <div class="info-box">
+        <h4>Construction Layers</h4>
+        <ul>
+          <li><strong>WOTS+</strong> — one-time signature for each leaf</li>
+          <li><strong>FORS</strong> — few-time signature over message digest chunks</li>
+          <li><strong>XMSS</strong> — eXtended Merkle Signature Scheme trees</li>
+          <li><strong>HT</strong> — Hypertree chaining XMSS layers</li>
+          <li>Stateless: no counter needed (unlike original XMSS)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARE -->
+  <div class="panel" id="panel-compare">
+    <h2 style="font-size:1.6rem; font-weight:800; margin-bottom:8px; color:white;">Algorithm Comparison</h2>
+    <p style="color:var(--muted); font-family:'Space Mono',monospace; font-size:0.8rem; margin-bottom:32px;">// NIST FIPS 203 / 204 / 205 vs Classical Cryptography</p>
+
+    <div class="compare-grid">
+      <div class="compare-cell classical">
+        <h4>⚠ Classical (Broken by Quantum)</h4>
+        <div class="compare-row"><span class="label">RSA-2048 Key</span><span class="val">256 B</span></div>
+        <div class="compare-row"><span class="label">ECDSA P-256 Sig</span><span class="val">64 B</span></div>
+        <div class="compare-row"><span class="label">ECDH shared secret</span><span class="val">32 B</span></div>
+        <div class="compare-row"><span class="label">Quantum security</span><span class="val" style="color:var(--accent-red)">0 bits</span></div>
+        <div class="compare-row"><span class="label">Hard problem</span><span class="val">Factoring / DLog</span></div>
+      </div>
+      <div class="compare-cell pq">
+        <h4>✓ Post-Quantum (NIST Selected)</h4>
+        <div class="compare-row"><span class="label">ML-KEM-768 pk</span><span class="val">1184 B</span></div>
+        <div class="compare-row"><span class="label">ML-DSA-65 sig</span><span class="val">3309 B</span></div>
+        <div class="compare-row"><span class="label">ML-KEM-768 ct</span><span class="val">1088 B</span></div>
+        <div class="compare-row"><span class="label">Quantum security</span><span class="val" style="color:var(--accent-hash)">~128 bits</span></div>
+        <div class="compare-row"><span class="label">Hard problem</span><span class="val">LWE / SIS / Hash</span></div>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE COMPARISON TABLE -->
+    <div class="visualizer">
+      <div class="vis-title">// Use Case Decision Matrix</div>
+      <table class="sec-table">
+        <thead>
+          <tr>
+            <th>Use Case</th>
+            <th>Recommended Algorithm</th>
+            <th>Reason</th>
+            <th>Security</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:white;">TLS Key Exchange</td>
+            <td style="color:var(--accent-ml);">ML-KEM-768</td>
+            <td style="color:var(--muted);">Small keys, fast ops</td>
+            <td><span class="sec-badge sec-3">Level 3</span></td>
+          </tr>
+          <tr>
+            <td style="color:white;">Code Signing</td>
+            <td style="color:var(--accent-lc);">ML-DSA-65</td>
+            <td style="color:var(--muted);">Balance sig size/speed</td>
+            <td><span class="sec-badge sec-3">Level 3</span></td>
+          </tr>
+          <tr>
+            <td style="color:white;">Root CA Certificate</td>
+            <td style="color:var(--accent-hash);">SLH-DSA-256s</td>
+            <td style="color:var(--muted);">Conservative, long-lived</td>
+            <td><span class="sec-badge sec-5">Level 5</span></td>
+          </tr>
+          <tr>
+            <td style="color:white;">IoT / Constrained</td>
+            <td style="color:var(--accent-ml);">ML-KEM-512</td>
+            <td style="color:var(--muted);">Smallest footprint</td>
+            <td><span class="sec-badge sec-1">Level 1</span></td>
+          </tr>
+          <tr>
+            <td style="color:white;">National Security</td>
+            <td style="color:var(--accent-lc);">ML-DSA-87</td>
+            <td style="color:var(--muted);">Highest lattice level</td>
+            <td><span class="sec-badge sec-5">Level 5</span></td>
+          </tr>
+          <tr>
+            <td style="color:white;">Blockchain / KERI</td>
+            <td style="color:var(--accent-lc);">ML-DSA-65 + ML-KEM-768</td>
+            <td style="color:var(--muted);">Hybrid migration path</td>
+            <td><span class="sec-badge sec-3">Level 3</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="two-col">
+      <div class="info-box">
+        <h4>Migration Strategy</h4>
+        <ul>
+          <li><strong>Hybrid mode:</strong> combine classical + PQC temporarily</li>
+          <li><strong>Harvest now, decrypt later</strong> — start encrypting data today</li>
+          <li>TLS 1.3 + ML-KEM already supported in Chrome/Firefox (X25519MLKEM768)</li>
+          <li>PKI migration: leaf certs first, then intermediates, then roots</li>
+          <li>KERI/ACDC: self-certifying identifiers can rotate to PQC keys</li>
+        </ul>
+      </div>
+      <div class="info-box">
+        <h4>NIST Security Levels</h4>
+        <ul>
+          <li><strong>Level 1</strong> — AES-128 equivalent (Grover attack)</li>
+          <li><strong>Level 2</strong> — SHA-256 collision equivalent</li>
+          <li><strong>Level 3</strong> — AES-192 equivalent</li>
+          <li><strong>Level 4</strong> — SHA-384 collision equivalent</li>
+          <li><strong>Level 5</strong> — AES-256 equivalent (highest)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Post-Quantum Cryptography · NIST FIPS 203/204/205 · <a href="https://csrc.nist.gov/pqc" target="_blank">csrc.nist.gov/pqc</a>
+</footer>
+
+<script>
+// =====================
+// TAB SYSTEM
+// =====================
+const tabs = ['overview','mlkem','mldsa','slhdsa','compare'];
+function showTab(id) {
+  tabs.forEach(t => {
+    document.getElementById('panel-'+t).classList.remove('active');
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  const idx = tabs.indexOf(id);
+  document.querySelectorAll('.tab-btn')[idx]?.classList.add('active');
+
+  if(id==='mlkem') { initLattice(); renderStep('mlkem'); renderSigBars(); }
+  if(id==='mldsa') { renderStep('mldsa'); renderSigBars(); }
+  if(id==='slhdsa') { renderTree(); renderStep('slhdsa'); }
+  if(id==='overview') { animateMeters(); }
+}
+
+// Meter animation
+function animateMeters() {
+  const data = [
+    {id:'m1', pct:15, cls:'broken'},
+    {id:'m2', pct:10, cls:'broken'},
+    {id:'m3', pct:55, cls:'medium'},
+    {id:'m4', pct:80, cls:'strong'},
+    {id:'m5', pct:95, cls:'strong'},
+    {id:'m6', pct:90, cls:'strong'},
+  ];
+  data.forEach(({id,pct}) => {
+    setTimeout(()=>{
+      const el = document.getElementById(id);
+      if(el) el.style.width = pct+'%';
+    }, 200);
+  });
+}
+setTimeout(animateMeters, 400);
+
+// =====================
+// LATTICE CANVAS
+// =====================
+function initLattice() {
+  const canvas = document.getElementById('lattice-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w, h, points=[], mouse={x:0,y:0};
+
+  function resize() {
+    w = canvas.width = canvas.offsetWidth;
+    h = canvas.height = 300;
+    genPoints();
+  }
+
+  function genPoints() {
+    points = [];
+    const spacing = 50;
+    const cols = Math.ceil(w/spacing)+2;
+    const rows = Math.ceil(h/spacing)+2;
+    const skew = 20;
+    for(let r=0;r<rows;r++) {
+      for(let c=0;c<cols;c++) {
+        const noise = (Math.random()-0.5)*12;
+        const x = c*spacing + (r%2)*skew/2 + noise - spacing;
+        const y = r*spacing + noise - spacing;
+        points.push({ox:x, oy:y, x, y});
+      }
+    }
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+  });
+
+  function draw() {
+    ctx.clearRect(0,0,w,h);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(0,212,255,0.08)';
+    ctx.lineWidth = 1;
+    for(let i=0;i<points.length;i++) {
+      const p = points[i];
+      for(let j=i+1;j<points.length;j++) {
+        const q = points[j];
+        const d = Math.hypot(p.x-q.x, p.y-q.y);
+        if(d < 70) {
+          const alpha = (1-d/70)*0.3;
+          ctx.strokeStyle = `rgba(0,212,255,${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(p.x,p.y);
+          ctx.lineTo(q.x,q.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Nodes
+    points.forEach(p => {
+      const d = Math.hypot(p.x-mouse.x, p.y-mouse.y);
+      const influence = Math.max(0, 1-d/120);
+      const px = p.ox + (mouse.x-p.ox)*influence*0.15;
+      const py = p.oy + (mouse.y-p.oy)*influence*0.15;
+      p.x = px; p.y = py;
+
+      const r = 2 + influence*3;
+      const alpha = 0.4 + influence*0.6;
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI*2);
+      ctx.fillStyle = influence > 0.3 ? `rgba(0,212,255,${alpha})` : `rgba(100,160,180,${alpha*0.5})`;
+      ctx.fill();
+    });
+
+    // Secret vector highlight
+    ctx.strokeStyle = 'rgba(168,85,247,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,4]);
+    const cx=w/2, cy=h/2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+60+mouse.x*0.02, cy-40+mouse.y*0.02);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = 'rgba(168,85,247,0.8)';
+    ctx.font = "10px 'Space Mono'";
+    ctx.fillText('s (secret)', cx+65, cy-38);
+
+    ctx.fillStyle = 'rgba(0,212,255,0.6)';
+    ctx.fillText('b = As + e', cx-30, cy+20);
+
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+}
+
+// =====================
+// STEP WALKTHROUGHS
+// =====================
+const stepData = {
+  mlkem: {
+    color: 'ml',
+    steps: [
+      {
+        title: '1. Key Generation (Bob)',
+        text: 'Bob generates a keypair. A random matrix A is derived from a seed using SHAKE-128. A secret key s and error vector e are sampled from a binomial distribution. The public key is t = As + e (mod q).',
+        code: `<span class="comment">// ML-KEM-768 Key Generation</span>
+σ ← RandomBytes(32)         <span class="comment">// seed</span>
+A ← SHAKE128(σ)             <span class="comment">// expand seed to matrix</span>
+s, e ← SampleBinomial(η)    <span class="comment">// small secret + error</span>
+<span class="kw">t</span> = <span class="fn">NTT_mul</span>(A, s) + e       <span class="comment">// public key computation</span>
+pk = (t, σ),  sk = (s, pk)  <span class="comment">// output keypair</span>`
+      },
+      {
+        title: '2. Encapsulation (Alice)',
+        text: 'Alice receives Bob\'s public key pk. She generates a random 32-byte message m, then uses it with the public key to produce a ciphertext ct and a shared secret K. The ciphertext contains the encrypted hint for Bob.',
+        code: `<span class="comment">// Alice encapsulates a shared secret</span>
+m ← RandomBytes(32)
+(K, r) ← SHAKE256(m ‖ H(pk))    <span class="comment">// derive K and coins r</span>
+r₁, e₁, e₂ ← SampleBinomial(η, r)
+u = <span class="fn">NTT_mul</span>(A, r₁) + e₁         <span class="comment">// encrypts randomness</span>
+v = <span class="fn">NTT_mul</span>(tᵀ, r₁) + e₂ + m  <span class="comment">// masks message</span>
+ct = (u, v)                       <span class="comment">// ciphertext to Bob</span>`
+      },
+      {
+        title: '3. Decapsulation (Bob)',
+        text: 'Bob uses his secret key s to remove the masking from the ciphertext. Due to the LWE structure, the small errors cancel out, revealing the original message m. Bob then recomputes the shared secret K identically to Alice.',
+        code: `<span class="comment">// Bob decapsulates using secret key s</span>
+m′ = v - <span class="fn">NTT_mul</span>(sᵀ, u)   <span class="comment">// recover message</span>
+<span class="comment">// Error terms cancel: sᵀu ≈ sᵀAr₁</span>
+<span class="comment">// m′ ≈ tᵀr₁ - sᵀAr₁ + m = m</span>
+K = <span class="fn">SHAKE256</span>(m′ ‖ H(pk))    <span class="comment">// derive shared secret</span>
+<span class="comment">// K matches Alice's K ✓</span>`
+      },
+      {
+        title: '4. Security Guarantee',
+        text: 'An attacker who intercepts ct cannot determine K without solving MLWE — finding s from (A, t = As+e). This is believed computationally hard for both classical and quantum computers. The IND-CCA2 security is achieved via a Fujisaki-Okamoto transform.',
+        code: `<span class="comment">// Attacker sees: A, t=As+e, u=Ar₁+e₁, v</span>
+<span class="comment">// Must solve: find s such that t ≈ As (mod q)</span>
+<span class="comment">// Best known quantum algorithm: O(2^128) for ML-KEM-768</span>
+<span class="comment">// Shor's algorithm: NOT applicable (not factoring/DLog)</span>
+<span class="comment">// BKZ lattice sieving: exponential in dimension</span>
+<span class="kw">Security</span>: ~<span class="val">128</span> bits quantum  <span class="comment">// Level 3</span>`
+      }
+    ]
+  },
+  mldsa: {
+    color: 'lc',
+    steps: [
+      {
+        title: '1. Key Generation',
+        text: 'The signer generates a matrix A from a public seed ρ using SHAKE-128. Secret vectors s₁ and s₂ with small coefficients are sampled. The public key t = As₁ + s₂ is computed using NTT.',
+        code: `(ρ, K, tr) ← SHAKE256(seed, 128)
+A ← <span class="fn">ExpandA</span>(ρ)              <span class="comment">// public matrix</span>
+(s₁, s₂) ← <span class="fn">SampleUniform</span>(η)  <span class="comment">// small secret vectors</span>
+t = <span class="fn">NTT_mul</span>(A, s₁) + s₂      <span class="comment">// public key</span>
+pk = (ρ, t)
+sk = (ρ, K, tr, s₁, s₂, t₀)   <span class="comment">// secret key</span>`
+      },
+      {
+        title: '2. Commitment Phase',
+        text: 'Signing begins by sampling a masking vector y with coefficients bounded by γ₁. The "commitment" w = Ay is computed. The high-order bits w₁ are extracted — this is the "hint" used in verification.',
+        code: `y ← <span class="fn">SampleUniform</span>(γ₁)    <span class="comment">// random masking vector</span>
+w = <span class="fn">NTT_mul</span>(A, y)           <span class="comment">// commitment</span>
+w₁ = <span class="fn">HighBits</span>(w, 2γ₂)       <span class="comment">// extract high bits</span>
+μ = <span class="fn">SHAKE256</span>(tr ‖ msg)      <span class="comment">// message hash</span>
+c̃ = <span class="fn">SHAKE256</span>(μ ‖ w₁)       <span class="comment">// challenge seed</span>`
+      },
+      {
+        title: '3. Challenge & Response',
+        text: 'A challenge polynomial c is derived from the message and commitment. The response z = y + cs₁ is computed. If any coefficient of z exceeds γ₁ − β, signing is ABORTED and restarted to prevent leaking s₁.',
+        code: `c = <span class="fn">SampleInBall</span>(c̃)        <span class="comment">// sparse ±1 polynomial</span>
+z = y + c·s₁               <span class="comment">// response vector</span>
+<span class="kw">if</span> ‖z‖∞ ≥ γ₁ − β: <span class="fn">ABORT</span>    <span class="comment">// rejection sampling</span>
+r₀ = <span class="fn">LowBits</span>(w − c·s₂, 2γ₂)
+<span class="kw">if</span> ‖r₀‖∞ ≥ γ₂ − β: <span class="fn">ABORT</span>
+h = <span class="fn">MakeHint</span>(−c·t₀, w−c·s₂+c·t₀)`
+      },
+      {
+        title: '4. Signature Output',
+        text: 'The signature is σ = (c̃, z, h). The hint h contains correction bits that help the verifier reconstruct the high bits of Az − ct₁ without knowing the secret key. Typical expected aborts: ~4.25 per signature for ML-DSA-65.',
+        code: `<span class="comment">// Final signature triple</span>
+σ = (c̃, z, h)
+<span class="comment">// Sizes for ML-DSA-65:</span>
+<span class="comment">// c̃: 48 bytes (challenge seed)</span>
+<span class="comment">// z: k×l polynomials (compressed)</span>
+<span class="comment">// h: hint bits (≤ω ones)</span>
+<span class="comment">// Total: 3309 bytes</span>`
+      },
+      {
+        title: '5. Verification',
+        text: 'The verifier, knowing only pk = (ρ, t), recomputes A and checks: (1) z bounds, (2) recomputes w′ = Az − ct using the hint h, (3) checks that SHAKE256(μ‖w₁′) = c̃. Forgery requires solving MSIS — finding a short vector in a lattice module.',
+        code: `<span class="comment">// Verify signature (ρ, t, μ, c̃, z, h)</span>
+A ← <span class="fn">ExpandA</span>(ρ)
+c = <span class="fn">SampleInBall</span>(c̃)
+w′ = <span class="fn">NTT_mul</span>(A,z) − c·t
+w₁′ = <span class="fn">UseHint</span>(h, w′, 2γ₂)
+<span class="kw">return</span> ‖z‖∞ < γ₁−β <span class="kw">AND</span>
+       c̃ == <span class="fn">SHAKE256</span>(μ‖w₁′) <span class="comment">// ✓</span>`
+      }
+    ]
+  },
+  slhdsa: {
+    color: 'hash',
+    steps: [
+      {
+        title: '1. WOTS+ One-Time Signatures',
+        text: 'At the leaf level, Winternitz One-Time Signatures (WOTS+) sign a single message chunk. Each private key is a sequence of n-byte strings; the public key is computed by applying a chain function W times. Only one message can be safely signed per WOTS+ key.',
+        code: `<span class="comment">// WOTS+ with w=16 Winternitz parameter</span>
+sk = [PRF(SK_seed, addr)] × len   <span class="comment">// private chains</span>
+pk[i] = <span class="fn">chain</span>(sk[i], 0, w-1, PK_seed)
+
+<span class="comment">// Signing: apply (w-1-b) chain steps</span>
+sig[i] = <span class="fn">chain</span>(sk[i], 0, b[i], PK_seed)
+<span class="comment">// Verifier applies remaining steps to get pk</span>`
+      },
+      {
+        title: '2. XMSS Tree Layer',
+        text: 'Multiple WOTS+ keys are organized into an XMSS (eXtended Merkle Signature Scheme) tree. The root of each tree is a single hash — the public key for that layer. Signatures include the WOTS+ signature plus an authentication path up the tree.',
+        code: `<span class="comment">// Build XMSS tree (2^h/d leaves)</span>
+leaves[i] = <span class="fn">WOTS_pkGen</span>(SK_seed, i)
+tree[level][i] = <span class="fn">H</span>(tree[level-1][2i] ‖
+                    tree[level-1][2i+1])
+
+<span class="comment">// Authentication path for leaf i</span>
+auth = [tree[j][sibling(i)] for j in levels]
+<span class="comment">// Root = merkle root hash (32 bytes)</span>`
+      },
+      {
+        title: '3. FORS Few-Time Signatures',
+        text: 'The message digest is split into k chunks of a bits each. Each chunk selects a leaf in one of k binary trees. FORS (Forest of Random Subsets) signs the message using k selected leaves plus their authentication paths. This provides security even if a few WOTS+ keys are reused.',
+        code: `<span class="comment">// FORS: k trees, each 2^a leaves</span>
+digest = <span class="fn">SHAKE256</span>(R ‖ PK ‖ M)
+indices = <span class="fn">base_2b</span>(digest, a, k)  <span class="comment">// k chunks</span>
+
+<span class="comment">// Sign: reveal k leaves + auth paths</span>
+sig_fors = [(leaf[i], auth_path[i])
+             for i in range(k)]
+pk_fors = <span class="fn">H</span>(roots[0..k-1])     <span class="comment">// combine roots</span>`
+      },
+      {
+        title: '4. Hypertree & Final Signature',
+        text: 'The FORS public key is signed by a WOTS+ in the bottom XMSS layer of a hypertree (HT) structure with d=8 layers. Each layer\'s root is signed by the next until the top root is reached — which IS the SLH-DSA public key. The full signature includes R, sig_fors, and d XMSS signatures.',
+        code: `<span class="comment">// HT: d layers of XMSS trees</span>
+sig_ht[0] = <span class="fn">XMSS_sign</span>(pk_fors, layer=0)
+<span class="kw">for</span> i in 1..d:
+  sig_ht[i] = <span class="fn">XMSS_sign</span>(root[i-1], layer=i)
+<span class="comment">// Final public key = top XMSS root (32 bytes)</span>
+<span class="comment">// Signature = (R, sig_fors, sig_ht[0..d])</span>
+<span class="comment">// Security: hash function collision resistance only</span>`
+      }
+    ]
+  }
+};
+
+const stepIndex = { mlkem:0, mldsa:0, slhdsa:0 };
+
+function renderStep(algo) {
+  const data = stepData[algo];
+  const s = data.steps[stepIndex[algo]];
+  const content = document.getElementById(algo+'-step-content');
+  if(!content) return;
+  content.innerHTML = `<h3>${s.title}</h3><p>${s.text}</p><div class="code-block">${s.code}</div>`;
+
+  const dots = document.querySelectorAll('#'+algo+'-steps .step-dot');
+  dots.forEach((d,i) => {
+    d.className = 'step-dot';
+    if(i===stepIndex[algo]) d.classList.add('active-'+data.color);
+  });
+}
+
+function showStep(algo, idx) {
+  stepIndex[algo] = idx;
+  renderStep(algo);
+}
+
+function nextStep(algo) {
+  const max = stepData[algo].steps.length - 1;
+  stepIndex[algo] = Math.min(stepIndex[algo]+1, max);
+  renderStep(algo);
+}
+
+function prevStep(algo) {
+  stepIndex[algo] = Math.max(stepIndex[algo]-1, 0);
+  renderStep(algo);
+}
+
+// Init steps
+renderStep('mlkem');
+renderStep('mldsa');
+renderStep('slhdsa');
+
+// =====================
+// SIG BARS
+// =====================
+function renderSigBars() {
+  const el = document.getElementById('sig-bars');
+  if(!el) return;
+  const items = [
+    {name:'ECDSA P-256', size:64, color:'#ef4444', max:50000},
+    {name:'ML-DSA-44', size:2420, color:'#a855f7', max:50000},
+    {name:'ML-DSA-65', size:3309, color:'#a855f7', max:50000},
+    {name:'ML-DSA-87', size:4627, color:'#a855f7', max:50000},
+    {name:'SLH-DSA-128s', size:7856, color:'#22c55e', max:50000},
+    {name:'SLH-DSA-256s', size:29792, color:'#22c55e', max:50000},
+    {name:'SLH-DSA-256f', size:49856, color:'#22c55e', max:50000},
+  ];
+  el.innerHTML = items.map(item => `
+    <div class="security-meter" style="margin-bottom:10px;">
+      <span class="meter-label" style="width:160px;">${item.name}</span>
+      <div class="meter-bar">
+        <div class="meter-fill" style="background:${item.color}; width:${(item.size/item.max*100).toFixed(1)}%"></div>
+      </div>
+      <span class="meter-val" style="color:${item.color}">${item.size >= 1000 ? (item.size/1000).toFixed(1)+'kB' : item.size+'B'}</span>
+    </div>
+  `).join('');
+}
+
+// =====================
+// HASH DEMO
+// =====================
+async function sha256hex(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function runHash() {
+  const m1 = document.getElementById('hash-in-1').value;
+  const m2 = document.getElementById('hash-in-2').value;
+  const [h1,h2] = await Promise.all([sha256hex(m1), sha256hex(m2)]);
+
+  document.getElementById('hash-out-1').textContent = h1;
+  document.getElementById('hash-out-2').textContent = h2;
+
+  // Diff
+  let diffHtml = '';
+  let diffBits = 0;
+  for(let i=0;i<h1.length;i++) {
+    if(h1[i]===h2[i]) {
+      diffHtml += `<span style="color:var(--muted)">${h1[i]}</span>`;
+    } else {
+      diffHtml += `<span style="color:var(--accent-red);font-weight:700">${h2[i]}</span>`;
+      const n1=parseInt(h1[i],16), n2=parseInt(h2[i],16);
+      for(let b=0;b<4;b++) if(((n1>>b)&1)!==((n2>>b)&1)) diffBits++;
+    }
+  }
+  const row = document.getElementById('hash-diff-row');
+  row.style.display = 'block';
+  document.getElementById('hash-diff-vis').innerHTML = diffHtml +
+    `<br><span style="color:var(--accent-warn); font-size:0.8rem;">≈${diffBits} bits differ out of 256 (${(diffBits/2.56).toFixed(0)}%) — Avalanche Effect</span>`;
+}
+
+// =====================
+// MERKLE TREE
+// =====================
+function renderTree() {
+  const el = document.getElementById('tree-vis');
+  if(!el) return;
+  el.innerHTML = '';
+
+  const levels = [
+    [{label:'Root', cls:'node-root'}],
+    [{label:'H01',cls:'node-internal highlighted'},{label:'H23',cls:'node-internal'}],
+    [{label:'H0',cls:'node-internal highlighted'},{label:'H1',cls:'node-internal'},{label:'H2',cls:'node-internal'},{label:'H3',cls:'node-internal'}],
+    Array.from({length:8},(_,i)=>({label:'L'+i, cls: i<2 ? 'node-leaf' : 'node-leaf', style:'border-color:rgba(100,160,100,0.3)'}))
+  ];
+
+  levels.forEach((level,li) => {
+    const div = document.createElement('div');
+    div.className = 'tree-level';
+    level.forEach(node => {
+      const n = document.createElement('div');
+      n.className = 'tree-node ' + node.cls;
+      n.textContent = node.label;
+      div.appendChild(n);
+    });
+    el.appendChild(div);
+  });
+
+  el.insertAdjacentHTML('beforeend',`
+    <p style="font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--muted);margin-top:8px;text-align:center;">
+      Signature proves leaf L0 is authentic by revealing highlighted path → Root
+    </p>
+  `);
+}
+
+// =====================
+// ML-KEM KEYGEN DEMO
+// =====================
+function randHex(n) {
+  return Array.from(crypto.getRandomValues(new Uint8Array(n))).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+let _mlkemState = null;
+
+function mlkemKeygen() {
+  const sk = randHex(64);
+  const pk = randHex(48);
+  _mlkemState = {sk, pk, ct:null, ss:null};
+  document.getElementById('mlkem-pk').textContent = pk + '... [1184 bytes, truncated]';
+  document.getElementById('mlkem-sk').textContent = sk + '... [2400 bytes, truncated]';
+  document.getElementById('mlkem-ct').textContent = '— click Encapsulate —';
+  document.getElementById('mlkem-ss').textContent = '— click Decapsulate —';
+}
+
+function mlkemEncap() {
+  if(!_mlkemState) { mlkemKeygen(); }
+  const ct = randHex(48);
+  const ss = randHex(32);
+  _mlkemState.ct = ct;
+  _mlkemState.ss = ss;
+  document.getElementById('mlkem-ct').textContent = ct + '... [1088 bytes, truncated]';
+  document.getElementById('mlkem-ss').textContent = '— click Decapsulate —';
+}
+
+function mlkemDecap() {
+  if(!_mlkemState?.ct) { alert('Generate keys and encapsulate first'); return; }
+  document.getElementById('mlkem-ss').textContent = _mlkemState.ss + ' [32 bytes — shared secret ✓]';
+}
+
+// Init sig bars
+renderSigBars();
+</script>
+</body>
+</html>

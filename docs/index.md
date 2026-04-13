@@ -15,6 +15,9 @@ title: selfdriven Tech
 - [OnChain](https://github.com/selfdriven-tech/interface-onchain)
 - [Infra](https://github.com/selfdriven-tech/interface-infra)
 
+# Research
+- [Post Quantum Cryptography](/research/post-quantum-cryptography) - interactive
+
 ## Related
 - [selfdriven.network](https://selfdriven.network) - Interfaces
 - [selfdriven.id](https://selfdriven.id) - Identity, Trust, SSI
