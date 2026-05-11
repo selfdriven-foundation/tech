@@ -17,7 +17,7 @@ title: selfdriven Tech
 
 # Research
 - [Post Quantum Cryptography](/research/post-quantum-cryptography) - interactive
-- [Satellite Nexus Framework](/research/satellite-nexus-framework)
+- [Satellite Nexus Framework](/research/satellite-nexus-network-framework)
 
 ## Related
 - [selfdriven.network](https://selfdriven.network) - Interfaces
