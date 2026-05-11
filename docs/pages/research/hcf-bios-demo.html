@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HALT AND CATCH FIRE — BIOS ROM ANALYZER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Oswald:wght@300;400;700&display=swap');
+
+  :root {
+    --phosphor: #00ff41;
+    --phosphor-dim: #00aa2a;
+    --phosphor-glow: #00ff4166;
+    --amber: #ffb300;
+    --amber-dim: #996c00;
+    --red-led: #ff2200;
+    --red-dim: #661000;
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --panel-border: #222222;
+    --scanline: rgba(0,0,0,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--phosphor);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* CRT scanlines overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      var(--scanline) 2px,
+      var(--scanline) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Vignette */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .header {
+    border-bottom: 1px solid var(--panel-border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    background: var(--panel);
+    position: relative;
+  }
+
+  .header-title {
+    font-family: 'VT323', monospace;
+    font-size: 2.2rem;
+    color: var(--amber);
+    text-shadow: 0 0 20px var(--amber), 0 0 40px var(--amber-dim);
+    letter-spacing: 4px;
+  }
+
+  .header-sub {
+    font-size: 0.7rem;
+    color: var(--phosphor-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .header-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.65rem;
+    color: var(--phosphor-dim);
+    letter-spacing: 2px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--red-led);
+    box-shadow: 0 0 8px var(--red-led);
+    animation: blink-dot 1.2s infinite;
+  }
+
+  @keyframes blink-dot {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.2; }
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto auto auto;
+    gap: 1px;
+    background: var(--panel-border);
+    min-height: calc(100vh - 61px);
+  }
+
+  .panel {
+    background: var(--bg);
+    padding: 20px;
+  }
+
+  /* ── LED BOARD ── */
+  .led-board {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    padding: 24px;
+  }
+
+  .section-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 5px;
+    color: var(--phosphor-dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #1a1a1a;
+    padding-bottom: 8px;
+  }
+
+  .board-container {
+    background: #0d0d0d;
+    border: 1px solid #1f1f1f;
+    border-radius: 4px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .board-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      linear-gradient(90deg, transparent 0%, rgba(0,255,65,0.02) 50%, transparent 100%),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,255,65,0.03) 40px, rgba(0,255,65,0.03) 41px);
+  }
+
+  .bus-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .bus-label {
+    font-size: 0.6rem;
+    color: var(--amber-dim);
+    letter-spacing: 2px;
+    width: 80px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .led-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .nibble-sep {
+    width: 12px;
+  }
+
+  .led {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #1a0000;
+    border: 1px solid #330000;
+    cursor: pointer;
+    transition: all 0.05s;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .led.on {
+    background: var(--red-led);
+    border-color: #ff6644;
+    box-shadow: 0 0 6px var(--red-led), 0 0 12px var(--red-led), inset 0 0 4px rgba(255,255,255,0.3);
+  }
+
+  .led.on-data {
+    background: var(--phosphor);
+    border-color: #88ffaa;
+    box-shadow: 0 0 6px var(--phosphor), 0 0 14px var(--phosphor-glow), inset 0 0 4px rgba(255,255,255,0.4);
+  }
+
+  .led-index {
+    position: absolute;
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.45rem;
+    color: #333;
+    white-space: nowrap;
+  }
+
+  .bus-value {
+    margin-left: 16px;
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    color: var(--amber);
+    text-shadow: 0 0 8px var(--amber-dim);
+    min-width: 60px;
+  }
+
+  .led-group-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    margin-top: 8px;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    border: 1px solid var(--phosphor-dim);
+    background: transparent;
+    color: var(--phosphor);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+
+  .btn:hover {
+    background: var(--phosphor);
+    color: #000;
+    box-shadow: 0 0 16px var(--phosphor-glow);
+  }
+
+  .btn.active {
+    background: var(--red-led);
+    border-color: var(--red-led);
+    color: #000;
+    box-shadow: 0 0 16px rgba(255,34,0,0.5);
+  }
+
+  .btn-amber {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+  }
+
+  .btn-amber:hover {
+    background: var(--amber);
+    box-shadow: 0 0 16px rgba(255,179,0,0.4);
+  }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.6rem;
+    color: var(--phosphor-dim);
+    letter-spacing: 2px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 80px;
+    height: 2px;
+    background: #222;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    background: var(--phosphor);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 6px var(--phosphor);
+  }
+
+  /* ── HEX DUMP ── */
+  .hex-panel {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+    padding: 20px 24px;
+    border-top: 1px solid var(--panel-border);
+  }
+
+  .hex-grid {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.9;
+    color: #446644;
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #222 #0a0a0a;
+  }
+
+  .hex-row {
+    display: flex;
+    gap: 0;
+    align-items: baseline;
+  }
+
+  .hex-addr {
+    color: #334433;
+    margin-right: 16px;
+    flex-shrink: 0;
+  }
+
+  .hex-bytes {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    flex: 1;
+  }
+
+  .hex-byte {
+    min-width: 22px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .hex-byte.active {
+    color: var(--phosphor);
+    text-shadow: 0 0 8px var(--phosphor);
+    background: rgba(0,255,65,0.08);
+    border-radius: 2px;
+  }
+
+  .hex-byte.visited {
+    color: var(--phosphor-dim);
+  }
+
+  .hex-ascii {
+    margin-left: 16px;
+    color: #2a3f2a;
+    letter-spacing: 1px;
+  }
+
+  /* ── DECODE PANEL ── */
+  .decode-panel {
+    grid-column: 2 / 3;
+    grid-row: 1 / 3;
+    border-left: 1px solid var(--panel-border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .decode-block {
+    background: #0d0d0d;
+    border: 1px solid #1a1a1a;
+    padding: 16px;
+    border-radius: 2px;
+  }
+
+  .decode-title {
+    font-size: 0.55rem;
+    letter-spacing: 4px;
+    color: var(--amber-dim);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .decode-value {
+    font-family: 'VT323', monospace;
+    font-size: 2.8rem;
+    line-height: 1;
+    color: var(--phosphor);
+    text-shadow: 0 0 16px var(--phosphor-glow);
+    word-break: break-all;
+  }
+
+  .decode-value.amber {
+    color: var(--amber);
+    text-shadow: 0 0 16px rgba(255,179,0,0.4);
+    font-size: 2.2rem;
+  }
+
+  .decode-sub {
+    font-size: 0.6rem;
+    color: #444;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
+  .binary-display {
+    display: flex;
+    gap: 6px;
+    font-family: 'VT323', monospace;
+    font-size: 1.4rem;
+    flex-wrap: wrap;
+  }
+
+  .bit-char {
+    transition: all 0.1s;
+  }
+
+  .bit-char.one {
+    color: var(--phosphor);
+    text-shadow: 0 0 8px var(--phosphor);
+  }
+
+  .bit-char.zero {
+    color: #1a2e1a;
+  }
+
+  .asm-display {
+    font-size: 0.8rem;
+    line-height: 1.8;
+    color: #558855;
+  }
+
+  .asm-op {
+    color: var(--amber);
+  }
+
+  .asm-arg {
+    color: var(--phosphor-dim);
+  }
+
+  .asm-comment {
+    color: #334;
+  }
+
+  /* ── TAPE ── */
+  .tape-panel {
+    grid-column: 1 / 3;
+    grid-row: 3 / 4;
+    border-top: 1px solid var(--panel-border);
+    padding: 16px 24px;
+  }
+
+  .tape {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .tape::-webkit-scrollbar { display: none; }
+
+  .tape-byte {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    border: 1px solid #111;
+    background: #0a0a0a;
+    transition: all 0.2s;
+    cursor: pointer;
+    gap: 2px;
+  }
+
+  .tape-byte .tb-hex {
+    color: #333;
+    font-size: 0.65rem;
+  }
+
+  .tape-byte .tb-dec {
+    color: #222;
+    font-size: 0.5rem;
+  }
+
+  .tape-byte.visited .tb-hex { color: #446644; }
+  .tape-byte.active {
+    border-color: var(--phosphor);
+    background: rgba(0,255,65,0.07);
+    box-shadow: 0 0 8px var(--phosphor-glow);
+  }
+
+  .tape-byte.active .tb-hex {
+    color: var(--phosphor);
+    text-shadow: 0 0 6px var(--phosphor);
+  }
+
+  .tape-byte.active .tb-dec { color: var(--phosphor-dim); }
+
+  /* ── TUTORIAL MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal {
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    max-width: 560px;
+    width: 90%;
+    padding: 32px;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--phosphor), transparent);
+  }
+
+  .modal-title {
+    font-family: 'VT323', monospace;
+    font-size: 1.8rem;
+    color: var(--amber);
+    text-shadow: 0 0 12px var(--amber-dim);
+    letter-spacing: 4px;
+    margin-bottom: 6px;
+  }
+
+  .modal-ep {
+    font-size: 0.6rem;
+    color: #444;
+    letter-spacing: 4px;
+    margin-bottom: 24px;
+  }
+
+  .modal-body {
+    font-size: 0.75rem;
+    line-height: 1.8;
+    color: #6a9a6a;
+  }
+
+  .modal-body strong {
+    color: var(--phosphor);
+  }
+
+  .modal-body .highlight {
+    color: var(--amber);
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+  }
+
+  .modal-body ul {
+    list-style: none;
+    margin: 10px 0;
+  }
+
+  .modal-body ul li::before {
+    content: '→  ';
+    color: var(--phosphor-dim);
+  }
+
+  .modal-close {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    padding: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--phosphor-dim);
+    color: var(--phosphor);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+
+  .modal-close:hover {
+    background: var(--phosphor);
+    color: #000;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #1f1f1f; }
+
+  /* Animations */
+  @keyframes flicker {
+    0%, 96%, 100% { opacity: 1; }
+    97% { opacity: 0.92; }
+    98% { opacity: 1; }
+    99% { opacity: 0.95; }
+  }
+
+  .board-container { animation: flicker 8s infinite; }
+
+  .cursor-blink {
+    animation: blink-dot 0.8s infinite;
+    display: inline-block;
+    color: var(--phosphor);
+  }
+
+  /* Address display */
+  .addr-display {
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+    color: #444;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .addr-display .lbl { font-size: 0.55rem; color: #333; letter-spacing: 2px; }
+  .addr-display .val { color: var(--amber-dim); }
+
+  .progress-bar {
+    height: 1px;
+    background: #111;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--phosphor-dim);
+    transition: width 0.1s;
+  }
+
+  .signal-lines {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    align-items: center;
+  }
+
+  .signal-line {
+    height: 1px;
+    flex: 1;
+    background: repeating-linear-gradient(90deg, #0d1a0d 0px, #0d1a0d 3px, #1a3a1a 3px, #1a3a1a 4px);
+    animation: signal-anim 0.3s infinite linear;
+  }
+
+  .signal-line.fast { animation-duration: 0.1s; }
+  .signal-line.active-sig { background: repeating-linear-gradient(90deg, #0a0a0a 0px, #0a0a0a 2px, #00ff41 2px, #00ff41 3px); }
+
+  @keyframes signal-anim {
+    from { background-position: 0 0; }
+    to { background-position: 8px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">HALT AND CATCH FIRE</div>
+    <div class="modal-ep">S01E01 — IBM BIOS ROM REVERSE ENGINEERING SIMULATOR</div>
+    <div class="modal-body">
+      <p>This interactive demo replicates what Cardiff and MacMillan are doing with that light board in the show.</p>
+      <br>
+      <p><strong>THE SETUP</strong></p>
+      <ul>
+        <li>They've tapped directly into the IBM PC's BIOS ROM chip</li>
+        <li>Each LED on the board = one bit on the data or address bus</li>
+        <li>ON = 1, OFF = 0 — binary at the electrical level</li>
+        <li>Groups of 8 LEDs = 1 byte of firmware data</li>
+      </ul>
+      <br>
+      <p><strong>THE TRANSLATION</strong></p>
+      <p>Every byte goes through three representations:</p>
+      <p class="highlight">1010 1100  →  AC  →  MOV AX, 0xAC00</p>
+      <ul>
+        <li>Binary: what the chip outputs electrically</li>
+        <li>Hex: compact shorthand (1 byte = 2 hex digits)</li>
+        <li>Assembly: human-readable machine code</li>
+      </ul>
+      <br>
+      <p><strong>THE GOAL</strong></p>
+      <p>Clean-room reverse engineering — understand the BIOS well enough to clone it without directly copying it. This is exactly how <strong>Compaq legally cloned the IBM PC</strong> in 1982.</p>
+      <br>
+      <p>Click <strong>RUN CAPTURE</strong> to watch the ROM dump live, or click any LED to toggle individual bits manually.</p>
+    </div>
+    <button class="modal-close" onclick="closeModal()">[ INITIALIZE ANALYZER ]</button>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-title">BIOS ROM ANALYZER</div>
+  <div class="header-sub">Logic State Capture System v1.0 · IBM PC 5150</div>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    CAPTURE READY
+  </div>
+</div>
+
+<div class="main">
+  <!-- LED BOARD -->
+  <div class="panel led-board">
+    <div class="section-label">Data Bus Monitor — Logic State Board</div>
+    <div class="board-container">
+      <div class="led-group-wrap">
+        <!-- Address Bus Row -->
+        <div class="bus-row">
+          <div class="bus-label">A[19:16]</div>
+          <div class="led-group" id="addr-hi-leds">
+            <!-- 4 LEDs -->
+          </div>
+          <div class="nibble-sep"></div>
+          <div class="led-group" id="addr-lo-leds">
+            <!-- 4 LEDs -->
+          </div>
+          <div class="bus-value" id="addr-hi-val">F0</div>
+          <div style="font-size:0.55rem; color:#333; letter-spacing:2px; margin-left:8px;">ADDR SEG</div>
+        </div>
+
+        <!-- Data Bus Row - HIGH NIBBLE -->
+        <div class="bus-row">
+          <div class="bus-label">D[7:4]</div>
+          <div class="led-group" id="data-hi-leds">
+            <!-- 4 green LEDs -->
+          </div>
+          <div class="nibble-sep"></div>
+          <div class="bus-value" style="font-size:1rem; color:#334; letter-spacing:1px; margin-left:4px;">HI</div>
+        </div>
+
+        <!-- Data Bus Row - LOW NIBBLE -->
+        <div class="bus-row">
+          <div class="bus-label">D[3:0]</div>
+          <div class="led-group" id="data-lo-leds">
+            <!-- 4 green LEDs -->
+          </div>
+          <div class="nibble-sep"></div>
+          <div class="bus-value" style="font-size:1rem; color:#334; letter-spacing:1px; margin-left:4px;">LO</div>
+        </div>
+
+        <!-- Signal lines (decorative viz) -->
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Control Signals</div>
+          <div style="display:grid; grid-template-columns: 60px 1fr; gap:6px; font-size:0.55rem; color:#2a3a2a; letter-spacing:1px;">
+            <span>/OE</span><div class="signal-line" id="sig-oe"></div>
+            <span>/CE</span><div class="signal-line fast" id="sig-ce"></div>
+            <span>CLK</span><div class="signal-line active-sig" id="sig-clk" style="animation-duration:0.2s;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="addr-display">
+        <span class="lbl">ROM ADDR</span>
+        <span class="val" id="rom-addr">F000:0000</span>
+        <span style="margin-left:auto; font-size:0.55rem; color:#2a2a2a; letter-spacing:2px;" id="byte-counter">BYTE 0000</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-amber" id="btn-run" onclick="toggleRun()">▶ RUN CAPTURE</button>
+      <button class="btn" onclick="stepOnce()">STEP</button>
+      <button class="btn" onclick="resetCapture()">RESET</button>
+      <div class="speed-control">
+        <span>SPEED</span>
+        <input type="range" min="1" max="10" value="4" id="speed-slider" oninput="updateSpeed(this.value)">
+        <span id="speed-val">4</span>
+      </div>
+      <button class="btn" style="margin-left:auto; font-size:0.6rem;" onclick="openModal()">? INFO</button>
+    </div>
+  </div>
+
+  <!-- DECODE PANEL -->
+  <div class="panel decode-panel">
+    <div class="section-label">Live Decode</div>
+
+    <div class="decode-block">
+      <div class="decode-title">Binary</div>
+      <div class="binary-display" id="bin-display">
+        <span class="bit-char zero">0</span>
+        <span class="bit-char zero">0</span>
+        <span class="bit-char zero">0</span>
+        <span class="bit-char zero">0</span>
+        <span style="color:#111; font-family:'VT323';font-size:1.4rem;"> </span>
+        <span class="bit-char zero">0</span>
+        <span class="bit-char zero">0</span>
+        <span class="bit-char zero">0</span>
+        <span class="bit-char zero">0</span>
+      </div>
+      <div class="decode-sub">8-bit data bus state</div>
+    </div>
+
+    <div class="decode-block">
+      <div class="decode-title">Hexadecimal</div>
+      <div class="decode-value" id="hex-display">00</div>
+      <div class="decode-sub">2 hex digits = 1 byte · compact, maps cleanly</div>
+    </div>
+
+    <div class="decode-block">
+      <div class="decode-title">Decimal</div>
+      <div class="decode-value amber" id="dec-display">0</div>
+      <div class="decode-sub">base-10 equivalent</div>
+    </div>
+
+    <div class="decode-block">
+      <div class="decode-title">x86 Disassembly</div>
+      <div class="asm-display" id="asm-display">
+        <span class="asm-comment">; waiting for data...</span>
+      </div>
+    </div>
+
+    <div class="decode-block">
+      <div class="decode-title">ROM Position</div>
+      <div style="font-size:0.7rem; color:#446644; line-height:2; letter-spacing:1px;">
+        <div>SEG: <span style="color:var(--amber-dim)" id="info-seg">F000</span></div>
+        <div>OFF: <span style="color:var(--amber-dim)" id="info-off">0000</span></div>
+        <div>BYTES READ: <span style="color:var(--phosphor-dim)" id="info-count">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEX DUMP -->
+  <div class="panel hex-panel">
+    <div class="section-label">ROM Dump — F000:0000 — IBM BIOS 5150</div>
+    <div class="hex-grid" id="hex-dump"></div>
+  </div>
+
+  <!-- TAPE -->
+  <div class="panel tape-panel">
+    <div class="section-label" style="margin-bottom:12px;">Byte Tape — Sequential Capture</div>
+    <div class="tape" id="byte-tape"></div>
+  </div>
+</div>
+
+<script>
+// ── IBM PC 5150 BIOS-like data (real-ish opcodes, not actual dump for brevity)
+const ROM_DATA = [
+  0xEA, 0x5B, 0xE0, 0x00, 0xF0, // JMP FAR F000:E05B (reset vector)
+  0xFA, // CLI
+  0x8C, 0xC8, // MOV AX, CS
+  0x8E, 0xD8, // MOV DS, AX
+  0xB8, 0x00, 0x00, // MOV AX, 0000
+  0x8E, 0xD0, // MOV SS, AX
+  0xBC, 0x00, 0x04, // MOV SP, 0400
+  0xE8, 0x23, 0x00, // CALL rel
+  0xB0, 0x55, // MOV AL, 55
+  0xE6, 0x61, // OUT 61, AL
+  0xB0, 0xAA, // MOV AL, AA
+  0xE6, 0x61, // OUT 61, AL
+  0xF4, // HLT
+  0x90, // NOP
+  0x2B, 0xC0, // SUB AX, AX
+  0xCD, 0x19, // INT 19
+  0xA0, 0x13, 0x04, // MOV AL, [0413]
+  0x8A, 0x26, 0x14, 0x04, // MOV AH, [0414]
+  0xEB, 0xFE, // JMP SHORT $ (infinite loop)
+  0xCB, // RETF
+  0x50, // PUSH AX
+  0x51, // PUSH CX
+  0x52, // PUSH DX
+  0x53, // PUSH BX
+  0x5B, // POP BX
+  0x5A, // POP DX
+  0x59, // POP CX
+  0x58, // POP AX
+  0xF3, 0xA4, // REP MOVSB
+  0xC3, // RET
+  0xFF, 0xFF, 0xFF, 0xFF, // FF padding
+  0x00, 0x00, 0x00, 0x00,
+  0x4D, 0x53, 0x49, 0x42, 0x4D, // "MSIBM"
+  0x43, 0x4F, 0x50, 0x59, // "COPY"
+  0x52, 0x49, 0x47, 0x48, 0x54, // "RIGHT"
+];
+
+// ── x86 mini-disassembler
+const asmMap = {
+  0xEA: { mnemonic: 'JMP FAR', args: 'ptr16:16', comment: '; far jump to reset vector' },
+  0xFA: { mnemonic: 'CLI', args: '', comment: '; disable interrupts' },
+  0x8C: { mnemonic: 'MOV', args: 'r/m16, Sreg', comment: '; copy segment reg' },
+  0x8E: { mnemonic: 'MOV', args: 'Sreg, r/m16', comment: '; load segment reg' },
+  0xB8: { mnemonic: 'MOV', args: 'AX, imm16', comment: '; load immediate to AX' },
+  0xBC: { mnemonic: 'MOV', args: 'SP, imm16', comment: '; init stack pointer' },
+  0xE8: { mnemonic: 'CALL', args: 'rel16', comment: '; near call subroutine' },
+  0xB0: { mnemonic: 'MOV', args: 'AL, imm8', comment: '; load byte to AL' },
+  0xE6: { mnemonic: 'OUT', args: 'imm8, AL', comment: '; write port' },
+  0xF4: { mnemonic: 'HLT', args: '', comment: '; halt processor' },
+  0x90: { mnemonic: 'NOP', args: '', comment: '; no operation' },
+  0x2B: { mnemonic: 'SUB', args: 'r16, r/m16', comment: '; subtract' },
+  0xCD: { mnemonic: 'INT', args: 'imm8', comment: '; software interrupt' },
+  0xA0: { mnemonic: 'MOV', args: 'AL, [moffs16]', comment: '; load from memory' },
+  0x8A: { mnemonic: 'MOV', args: 'r8, r/m8', comment: '; byte load' },
+  0xEB: { mnemonic: 'JMP', args: 'rel8', comment: '; short jump' },
+  0xCB: { mnemonic: 'RETF', args: '', comment: '; far return' },
+  0x50: { mnemonic: 'PUSH', args: 'AX', comment: '; save AX' },
+  0x51: { mnemonic: 'PUSH', args: 'CX', comment: '; save CX' },
+  0x52: { mnemonic: 'PUSH', args: 'DX', comment: '; save DX' },
+  0x53: { mnemonic: 'PUSH', args: 'BX', comment: '; save BX' },
+  0x5B: { mnemonic: 'POP', args: 'BX', comment: '; restore BX' },
+  0x5A: { mnemonic: 'POP', args: 'DX', comment: '; restore DX' },
+  0x59: { mnemonic: 'POP', args: 'CX', comment: '; restore CX' },
+  0x58: { mnemonic: 'POP', args: 'AX', comment: '; restore AX' },
+  0xF3: { mnemonic: 'REP', args: '', comment: '; repeat prefix' },
+  0xA4: { mnemonic: 'MOVSB', args: '', comment: '; move string byte' },
+  0xC3: { mnemonic: 'RET', args: '', comment: '; near return' },
+  0xFF: { mnemonic: 'DB', args: 'FFh', comment: '; padding / unused' },
+  0x00: { mnemonic: 'ADD', args: '[BX+SI], AL', comment: '; (null region)' },
+  0x4D: { mnemonic: 'DB', args: '"M"', comment: '; ASCII string data' },
+  0x53: { mnemonic: 'DB', args: '"S"', comment: '; ASCII string data' },
+  0x49: { mnemonic: 'DB', args: '"I"', comment: '; ASCII string data' },
+  0x42: { mnemonic: 'DB', args: '"B"', comment: '; ASCII string data' },
+  0x43: { mnemonic: 'DB', args: '"C"', comment: '; ASCII string data' },
+  0x4F: { mnemonic: 'DB', args: '"O"', comment: '; ASCII string data' },
+  0x50: { mnemonic: 'DB', args: '"P"', comment: '; ASCII string data' },
+  0x59: { mnemonic: 'DB', args: '"Y"', comment: '; ASCII string data' },
+  0x52: { mnemonic: 'DB', args: '"R"', comment: '; ASCII string data' },
+  0x47: { mnemonic: 'DB', args: '"G"', comment: '; ASCII string data' },
+  0x48: { mnemonic: 'DB', args: '"H"', comment: '; ASCII string data' },
+  0x54: { mnemonic: 'DB', args: '"T"', comment: '; ASCII string data' },
+};
+
+// ── State
+let currentIndex = 0;
+let isRunning = false;
+let runInterval = null;
+let speedMs = 350;
+let currentByte = 0;
+
+// ── Build LED arrays
+function buildLEDs(containerId, count, type) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  for (let i = count - 1; i >= 0; i--) {
+    const led = document.createElement('div');
+    led.className = 'led' + (type === 'data' ? '' : '');
+    led.dataset.bit = i;
+    led.dataset.type = type;
+    const idx = document.createElement('div');
+    idx.className = 'led-index';
+    idx.textContent = (type === 'addr-hi') ? `A${i+16}` : (type === 'addr-lo') ? `A${i+12}` : `D${i + (containerId.includes('hi') ? 4 : 0)}`;
+    led.appendChild(idx);
+    led.addEventListener('click', () => manualToggle(containerId, i, type));
+    container.appendChild(led);
+  }
+}
+
+buildLEDs('addr-hi-leds', 4, 'addr-hi');
+buildLEDs('addr-lo-leds', 4, 'addr-lo');
+buildLEDs('data-hi-leds', 4, 'data-hi');
+buildLEDs('data-lo-leds', 4, 'data-lo');
+
+// ── Build hex dump skeleton
+function buildHexDump() {
+  const container = document.getElementById('hex-dump');
+  container.innerHTML = '';
+  const bytesPerRow = 16;
+  const rows = Math.ceil(ROM_DATA.length / bytesPerRow);
+  for (let r = 0; r < rows; r++) {
+    const row = document.createElement('div');
+    row.className = 'hex-row';
+    const addr = document.createElement('span');
+    addr.className = 'hex-addr';
+    addr.textContent = 'F000:' + (r * bytesPerRow).toString(16).toUpperCase().padStart('4','0');
+    row.appendChild(addr);
+    const bytes = document.createElement('div');
+    bytes.className = 'hex-bytes';
+    let ascii = '';
+    for (let b = 0; b < bytesPerRow; b++) {
+      const idx = r * bytesPerRow + b;
+      const span = document.createElement('span');
+      span.className = 'hex-byte';
+      span.id = `hb-${idx}`;
+      span.textContent = idx < ROM_DATA.length ? ROM_DATA[idx].toString(16).toUpperCase().padStart(2, '0') : '  ';
+      bytes.appendChild(span);
+      if (idx < ROM_DATA.length) {
+        const c = ROM_DATA[idx];
+        ascii += (c >= 0x20 && c <= 0x7E) ? String.fromCharCode(c) : '.';
+      }
+    }
+    row.appendChild(bytes);
+    const asc = document.createElement('span');
+    asc.className = 'hex-ascii';
+    asc.textContent = ascii;
+    row.appendChild(asc);
+    container.appendChild(row);
+  }
+}
+
+buildHexDump();
+
+// ── Build tape
+function buildTape() {
+  const tape = document.getElementById('byte-tape');
+  tape.innerHTML = '';
+  ROM_DATA.forEach((byte, i) => {
+    const tb = document.createElement('div');
+    tb.className = 'tape-byte';
+    tb.id = `tb-${i}`;
+    tb.innerHTML = `<span class="tb-hex">${byte.toString(16).toUpperCase().padStart(2,'0')}</span><span class="tb-dec">${byte}</span>`;
+    tb.addEventListener('click', () => jumpTo(i));
+    tape.appendChild(tb);
+  });
+}
+
+buildTape();
+
+// ── Update display for a byte value
+function displayByte(byte, index) {
+  currentByte = byte;
+
+  // Update data LEDs
+  const hiLeds = document.querySelectorAll('#data-hi-leds .led');
+  const loLeds = document.querySelectorAll('#data-lo-leds .led');
+
+  // High nibble (D7-D4)
+  const hiNibble = (byte >> 4) & 0xF;
+  const loNibble = byte & 0xF;
+
+  hiLeds.forEach((led, i) => {
+    const bitPos = 3 - i;
+    const on = (hiNibble >> bitPos) & 1;
+    led.className = 'led' + (on ? ' on-data' : '');
+  });
+
+  loLeds.forEach((led, i) => {
+    const bitPos = 3 - i;
+    const on = (loNibble >> bitPos) & 1;
+    led.className = 'led' + (on ? ' on-data' : '');
+  });
+
+  // Address bus (segment F, offset = index)
+  const addrHiLeds = document.querySelectorAll('#addr-hi-leds .led');
+  const addrLoLeds = document.querySelectorAll('#addr-lo-leds .led');
+  const addrVal = 0xF0 | ((index >> 8) & 0x0F);
+  const addrLo = index & 0xFF;
+  
+  addrHiLeds.forEach((led, i) => {
+    const on = (addrVal >> (3-i)) & 1;
+    led.className = 'led' + (on ? ' on' : '');
+  });
+  addrLoLeds.forEach((led, i) => {
+    const on = (addrLo >> (3-i)) & 1;  // just show top nibble of offset
+    // simplified: show the index nibble
+    const nibble = (index >> 4) & 0xF;
+    const bit = (nibble >> (3-i)) & 1;
+    led.className = 'led' + (bit ? ' on' : '');
+  });
+
+  // Addr hi value display
+  document.getElementById('addr-hi-val').textContent = 'F0';
+
+  // Binary display
+  const binDisp = document.getElementById('bin-display');
+  const bits = byte.toString(2).padStart(8, '0');
+  let html = '';
+  for (let i = 0; i < 8; i++) {
+    if (i === 4) html += `<span style="color:#111; font-family:'VT323';font-size:1.4rem;"> </span>`;
+    html += `<span class="bit-char ${bits[i] === '1' ? 'one' : 'zero'}">${bits[i]}</span>`;
+  }
+  binDisp.innerHTML = html;
+
+  // Hex
+  const hexStr = byte.toString(16).toUpperCase().padStart(2, '0');
+  document.getElementById('hex-display').textContent = hexStr;
+  document.getElementById('hex-display').style.textShadow = `0 0 16px var(--phosphor-glow)`;
+
+  // Dec
+  document.getElementById('dec-display').textContent = byte;
+
+  // ASM
+  const asm = asmMap[byte];
+  const asmEl = document.getElementById('asm-display');
+  if (asm) {
+    asmEl.innerHTML = `<span class="asm-op">${asm.mnemonic}</span>${asm.args ? ` <span class="asm-arg">${asm.args}</span>` : ''}<br><span class="asm-comment">${asm.comment}</span>`;
+  } else {
+    asmEl.innerHTML = `<span class="asm-op">DB</span> <span class="asm-arg">${hexStr}h</span><br><span class="asm-comment">; raw data byte</span>`;
+  }
+
+  // ROM address
+  const offset = index.toString(16).toUpperCase().padStart(4, '0');
+  document.getElementById('rom-addr').textContent = `F000:${offset}`;
+  document.getElementById('byte-counter').textContent = `BYTE ${index.toString().padStart(4, '0')}`;
+  document.getElementById('info-seg').textContent = 'F000';
+  document.getElementById('info-off').textContent = offset;
+  document.getElementById('info-count').textContent = index + 1;
+
+  // Progress
+  const pct = ((index + 1) / ROM_DATA.length * 100).toFixed(1);
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  // Hex dump highlight
+  document.querySelectorAll('.hex-byte').forEach(el => {
+    el.classList.remove('active');
+    if (parseInt(el.id.replace('hb-','')) < index) el.classList.add('visited');
+  });
+  const activeHex = document.getElementById(`hb-${index}`);
+  if (activeHex) {
+    activeHex.classList.add('active');
+    activeHex.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // Tape
+  document.querySelectorAll('.tape-byte').forEach(el => {
+    el.classList.remove('active');
+    if (parseInt(el.id.replace('tb-','')) < index) el.classList.add('visited');
+  });
+  const activeTape = document.getElementById(`tb-${index}`);
+  if (activeTape) {
+    activeTape.classList.add('active');
+    activeTape.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function stepOnce() {
+  if (currentIndex >= ROM_DATA.length) {
+    currentIndex = 0;
+    document.querySelectorAll('.hex-byte').forEach(el => el.classList.remove('active','visited'));
+    document.querySelectorAll('.tape-byte').forEach(el => el.classList.remove('active','visited'));
+  }
+  displayByte(ROM_DATA[currentIndex], currentIndex);
+  currentIndex++;
+}
+
+function toggleRun() {
+  if (isRunning) {
+    clearInterval(runInterval);
+    isRunning = false;
+    document.getElementById('btn-run').textContent = '▶ RUN CAPTURE';
+    document.getElementById('btn-run').classList.remove('active');
+  } else {
+    isRunning = true;
+    document.getElementById('btn-run').textContent = '■ STOP';
+    document.getElementById('btn-run').classList.add('active');
+    runInterval = setInterval(() => {
+      if (currentIndex >= ROM_DATA.length) {
+        clearInterval(runInterval);
+        isRunning = false;
+        document.getElementById('btn-run').textContent = '▶ RUN CAPTURE';
+        document.getElementById('btn-run').classList.remove('active');
+        return;
+      }
+      displayByte(ROM_DATA[currentIndex], currentIndex);
+      currentIndex++;
+    }, speedMs);
+  }
+}
+
+function resetCapture() {
+  clearInterval(runInterval);
+  isRunning = false;
+  currentIndex = 0;
+  document.getElementById('btn-run').textContent = '▶ RUN CAPTURE';
+  document.getElementById('btn-run').classList.remove('active');
+  document.querySelectorAll('.led').forEach(l => l.className = 'led');
+  document.querySelectorAll('.hex-byte').forEach(el => el.classList.remove('active','visited'));
+  document.querySelectorAll('.tape-byte').forEach(el => el.classList.remove('active','visited'));
+  document.getElementById('hex-display').textContent = '00';
+  document.getElementById('dec-display').textContent = '0';
+  document.getElementById('asm-display').innerHTML = '<span class="asm-comment">; waiting for data...</span>';
+  document.getElementById('rom-addr').textContent = 'F000:0000';
+  document.getElementById('byte-counter').textContent = 'BYTE 0000';
+  document.getElementById('info-count').textContent = '0';
+  document.getElementById('progress-fill').style.width = '0%';
+  const binDisp = document.getElementById('bin-display');
+  binDisp.innerHTML = '00000000'.split('').map((b,i) => `${i===4?'<span style="color:#111;font-family:VT323;font-size:1.4rem;"> </span>':''}<span class="bit-char zero">${b}</span>`).join('');
+}
+
+function jumpTo(index) {
+  currentIndex = index;
+  displayByte(ROM_DATA[index], index);
+  currentIndex = index + 1;
+}
+
+function manualToggle(containerId, bit, type) {
+  if (type !== 'data-hi' && type !== 'data-lo') return;
+  // Toggle the bit in current byte
+  const bitPos = type === 'data-hi' ? bit + 4 : bit;
+  const newByte = currentByte ^ (1 << bitPos);
+  displayByte(newByte, Math.max(0, currentIndex - 1));
+  currentByte = newByte;
+}
+
+function updateSpeed(val) {
+  document.getElementById('speed-val').textContent = val;
+  speedMs = Math.round(1200 / val);
+  if (isRunning) {
+    clearInterval(runInterval);
+    runInterval = setInterval(() => {
+      if (currentIndex >= ROM_DATA.length) {
+        clearInterval(runInterval);
+        isRunning = false;
+        document.getElementById('btn-run').textContent = '▶ RUN CAPTURE';
+        document.getElementById('btn-run').classList.remove('active');
+        return;
+      }
+      displayByte(ROM_DATA[currentIndex], currentIndex);
+      currentIndex++;
+    }, speedMs);
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+function openModal() {
+  document.getElementById('modal').style.display = 'flex';
+}
+
+// Init display
+displayByte(ROM_DATA[0], 0);
+currentIndex = 1;
+</script>
+</body>
+</html>
